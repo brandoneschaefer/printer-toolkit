@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Download } from "lucide-react";
 import { createCollectorAction, type CollectorActionState } from "@/lib/actions/collectors";
 
 const initial: CollectorActionState = {};
@@ -24,6 +24,36 @@ export function CollectorManager({
       setCopied(key);
       setTimeout(() => setCopied(null), 1500);
     });
+  };
+
+  // Generate a self-elevating .bat with the token baked in. Double-click ->
+  // one UAC prompt -> installs. No manual admin PowerShell needed.
+  const downloadBat = (token: string) => {
+    const bat = [
+      "@echo off",
+      "REM SentinelPrint Collector installer - double-click to install.",
+      "net session >nul 2>&1",
+      "if %errorlevel% neq 0 (",
+      '  echo Requesting administrator permission...',
+      "  powershell -Command \"Start-Process -FilePath '%~f0' -Verb RunAs\"",
+      "  exit /b",
+      ")",
+      "echo Installing SentinelPrint Collector...",
+      `powershell -ExecutionPolicy Bypass -NoProfile -Command "$env:COLLECTOR_TOKEN='${token}'; $env:SENTINEL_URL='${appUrl}'; irm ${installerUrl} | iex"`,
+      "echo.",
+      "echo Done. You can close this window.",
+      "pause",
+      "",
+    ].join("\r\n");
+    const blob = new Blob([bat], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "install-sentinel-collector.bat";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -63,17 +93,27 @@ export function CollectorManager({
 
           {tab === "windows" ? (
             <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
-              <div className="mb-2 font-semibold text-slate-300">
-                On an always-on Windows PC in the target network, open <span className="text-white">PowerShell as Administrator</span> and paste:
+              <div className="mb-1 font-semibold text-slate-200">Easiest: download &amp; double-click</div>
+              <p className="mb-3 text-slate-400">
+                On an always-on Windows PC in the target network, download this installer, double-click it, and
+                click <span className="text-white">Yes</span> on the Windows permission prompt. That&apos;s it — no
+                command line.
+              </p>
+              <button type="button" onClick={() => downloadBat(state.token!)} className="btn-primary text-xs">
+                <Download className="h-4 w-4" /> Download installer (.bat)
+              </button>
+
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="mb-2 font-semibold text-slate-300">Or, advanced: run in an Administrator PowerShell</div>
+                <CopyBlock
+                  text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`}
+                  copied={copied === "win"}
+                  onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`, "win")}
+                />
               </div>
-              <CopyBlock
-                text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`}
-                copied={copied === "win"}
-                onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`, "win")}
-              />
               <div className="mt-2 text-slate-500">
                 Installs a lightweight background service (no Docker). Auto-starts on boot, outbound HTTPS only.
-                It will show as “Online” here within a minute.
+                Appears as “Online” here within a minute.
               </div>
             </div>
           ) : (
