@@ -17,6 +17,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
     include: {
       hosts: { orderBy: { address: "asc" } },
       findings: true,
+      collector: { select: { name: true } },
     },
   });
   if (!audit) notFound();
@@ -57,7 +58,9 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
       {inFlight && (
         <div className="card">
           <p className="text-sm text-slate-300">
-            The scan is {audit.status.toLowerCase()}. This page updates automatically as results arrive.
+            {audit.executor === "COLLECTOR" && audit.status === "QUEUED"
+              ? `Waiting for collector “${audit.collector?.name ?? "—"}” to pick up this job. Make sure the collector is running on your network.`
+              : `The scan is ${audit.status.toLowerCase()}. This page updates automatically as results arrive.`}
           </p>
         </div>
       )}

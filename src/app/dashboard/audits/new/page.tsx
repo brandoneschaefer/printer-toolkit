@@ -8,11 +8,23 @@ export default async function NewAuditPage() {
   const subActive = hasActiveSubscription(org);
   const canRun = subActive || org.auditCredits > 0;
 
-  const targets = await prisma.target.findMany({
-    where: { orgId: org.id, authorized: true },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, label: true, value: true },
-  });
+  const [targets, collectorRows] = await Promise.all([
+    prisma.target.findMany({
+      where: { orgId: org.id, authorized: true },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, label: true, value: true },
+    }),
+    prisma.collector.findMany({
+      where: { orgId: org.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, lastSeenAt: true },
+    }),
+  ]);
+  const collectors = collectorRows.map((c) => ({
+    id: c.id,
+    name: c.name,
+    online: !!c.lastSeenAt && Date.now() - new Date(c.lastSeenAt).getTime() < 2 * 60 * 1000,
+  }));
 
   return (
     <div className="space-y-6">
@@ -26,7 +38,7 @@ export default async function NewAuditPage() {
         </p>
       </div>
 
-      <RunAuditForm targets={targets} canRun={canRun} />
+      <RunAuditForm targets={targets} collectors={collectors} canRun={canRun} />
     </div>
   );
 }

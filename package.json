@@ -13,7 +13,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "scan:cli": "tsx scripts/scan-cli.ts"
+    "scan:cli": "tsx scripts/scan-cli.ts",
+    "agent": "tsx agent/collector.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

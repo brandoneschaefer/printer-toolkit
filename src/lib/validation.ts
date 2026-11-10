@@ -23,4 +23,6 @@ export const runAuditSchema = z.object({
   name: z.string().min(1, "Audit name is required").max(120),
   targetIds: z.array(z.string()).min(1, "Select at least one target"),
   activeProbes: z.boolean().default(true),
+  executor: z.enum(["CLOUD", "COLLECTOR"]).default("CLOUD"),
+  collectorId: z.string().optional().or(z.literal("")),
 });

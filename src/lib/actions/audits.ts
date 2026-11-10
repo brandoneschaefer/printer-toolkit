@@ -15,10 +15,13 @@ export async function runAuditAction(_prev: ActionState, formData: FormData): Pr
   const { session, org } = await requireTenant();
 
   const targetIds = formData.getAll("targetIds").map(String).filter(Boolean);
+  const executor = formData.get("executor") === "COLLECTOR" ? "COLLECTOR" : "CLOUD";
   const parsed = runAuditSchema.safeParse({
     name: formData.get("name"),
     targetIds,
     activeProbes: formData.get("activeProbes") !== "off",
+    executor,
+    collectorId: formData.get("collectorId") ?? "",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -32,6 +35,8 @@ export async function runAuditAction(_prev: ActionState, formData: FormData): Pr
       name: parsed.data.name,
       targetIds: parsed.data.targetIds,
       activeProbes: parsed.data.activeProbes,
+      executor: parsed.data.executor,
+      collectorId: parsed.data.collectorId || null,
     });
   } catch (err) {
     if (err instanceof EntitlementError) return { error: err.message };
@@ -39,10 +44,13 @@ export async function runAuditAction(_prev: ActionState, formData: FormData): Pr
     return { error: err instanceof Error ? err.message : "Failed to start audit" };
   }
 
-  // Kick off the scan without blocking the response; the detail page polls.
-  void runAuditJob(auditId).catch(() => {
-    /* errors are persisted on the audit record inside runAuditJob */
-  });
+  // CLOUD audits run in-process now; COLLECTOR audits wait for an on-prem agent
+  // to claim them, so we just leave them QUEUED.
+  if (parsed.data.executor === "CLOUD") {
+    void runAuditJob(auditId).catch(() => {
+      /* errors are persisted on the audit record inside runAuditJob */
+    });
+  }
 
   revalidatePath("/dashboard/audits");
   redirect(`/dashboard/audits/${auditId}`);

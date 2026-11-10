@@ -52,6 +52,7 @@ model Organization {
   targets     Target[]
   audits      Audit[]
   payments    Payment[]
+  collectors  Collector[]
 }
 
 model Membership {
@@ -109,12 +110,41 @@ enum AuditKind {
   SUBSCRIPTION // covered by active monitoring subscription
 }
 
+// Where a scan actually executes.
+//   CLOUD     - the control plane runs the scanner (internet-facing targets)
+//   COLLECTOR - an on-prem agent inside the customer network claims and runs it
+enum ScanExecutor {
+  CLOUD
+  COLLECTOR
+}
+
+// An on-prem scan agent registered to a tenant. It authenticates with a
+// bearer token (only the bcrypt hash is stored) and polls for jobs scoped to
+// its organization.
+model Collector {
+  id         String    @id @default(cuid())
+  orgId      String
+  name       String
+  tokenHash  String
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  createdById String?
+
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  audits Audit[]
+
+  @@index([orgId])
+}
+
 model Audit {
   id          String      @id @default(cuid())
   orgId       String
   name        String
   status      AuditStatus @default(QUEUED)
   kind        AuditKind
+  executor    ScanExecutor @default(CLOUD)
+  collectorId String?
+  claimedAt   DateTime?
   // Comma-free JSON snapshot of the hosts/scope requested at run time.
   scope       Json
   riskScore   Int         @default(0) // 0-100, higher = worse
@@ -127,6 +157,7 @@ model Audit {
 
   org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   createdBy User?        @relation("AuditCreatedBy", fields: [createdById], references: [id])
+  collector Collector?   @relation(fields: [collectorId], references: [id], onDelete: SetNull)
   hosts     AuditHost[]
   findings  Finding[]
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { runAuditAction, type ActionState } from "@/lib/actions/audits";
 
 const initial: ActionState = {};
@@ -11,20 +11,55 @@ interface TargetOption {
   value: string;
 }
 
+interface CollectorOption {
+  id: string;
+  name: string;
+  online: boolean;
+}
+
 export function RunAuditForm({
   targets,
+  collectors,
   canRun,
 }: {
   targets: TargetOption[];
+  collectors: CollectorOption[];
   canRun: boolean;
 }) {
   const [state, formAction, pending] = useActionState(runAuditAction, initial);
+  const [executor, setExecutor] = useState<"CLOUD" | "COLLECTOR">("CLOUD");
 
   return (
     <form action={formAction} className="card space-y-5">
       <div>
         <label className="label" htmlFor="name">Audit name</label>
         <input id="name" name="name" className="input" placeholder="Q4 HQ printer sweep" required />
+      </div>
+
+      {/* Execution mode */}
+      <div>
+        <span className="label">Where should this scan run?</span>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className={`cursor-pointer rounded-lg border p-3 text-sm ${executor === "CLOUD" ? "border-brand-400 bg-brand-500/10" : "border-white/10 bg-ink-900"}`}>
+            <input type="radio" name="executor" value="CLOUD" className="sr-only" checked={executor === "CLOUD"} onChange={() => setExecutor("CLOUD")} />
+            <div className="font-medium text-white">Cloud scan</div>
+            <div className="mt-1 text-xs text-slate-400">For internet-reachable targets. Runs immediately on SentinelPrint.</div>
+          </label>
+          <label className={`cursor-pointer rounded-lg border p-3 text-sm ${executor === "COLLECTOR" ? "border-brand-400 bg-brand-500/10" : "border-white/10 bg-ink-900"} ${collectors.length === 0 ? "opacity-50" : ""}`}>
+            <input type="radio" name="executor" value="COLLECTOR" className="sr-only" checked={executor === "COLLECTOR"} onChange={() => setExecutor("COLLECTOR")} disabled={collectors.length === 0} />
+            <div className="font-medium text-white">On-prem collector</div>
+            <div className="mt-1 text-xs text-slate-400">
+              {collectors.length === 0 ? "No collectors registered yet." : "For printers on an internal network."}
+            </div>
+          </label>
+        </div>
+        {executor === "COLLECTOR" && (
+          <select name="collectorId" className="input mt-2" defaultValue={collectors[0]?.id}>
+            {collectors.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}{c.online ? " (online)" : " (offline)"}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div>
