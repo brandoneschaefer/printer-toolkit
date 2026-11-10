@@ -5,19 +5,14 @@ import { probePort, pjlInfo } from "./tcp";
 import { snmpDefaultCommunity } from "./snmp";
 import { httpProbe } from "./http";
 import { PRINTER_PORTS, makeFinding, riskScore, severityCounts } from "./checks";
+import { guessVendor, classifyDevice, extractModel } from "./vendors";
 import type { HostResult, RawFinding, ScanOptions, ScanResult } from "./types";
-
-function guessVendor(text?: string): string | undefined {
-  if (!text) return undefined;
-  const t = text.toLowerCase();
-  const vendors = ["hp", "hewlett", "lexmark", "canon", "epson", "brother", "xerox", "ricoh", "kyocera", "konica", "sharp", "dell", "samsung", "oki", "toshiba"];
-  const hit = vendors.find((v) => t.includes(v));
-  if (!hit) return undefined;
-  return hit === "hewlett" ? "HP" : hit.toUpperCase();
-}
 
 async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
   const findings: RawFinding[] = [];
+  // Accumulated identity strings (PJL ID, web banners, SNMP sysDescr) used to
+  // fingerprint vendor / model / device type at the end.
+  const identity: string[] = [];
 
   // 1. TCP port sweep (parallel).
   const portResults = await Promise.all(
@@ -29,7 +24,6 @@ async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
 
   const openPorts = portResults.filter((p) => p.open).map((p) => p.port);
   const online = openPorts.length > 0;
-  let vendor: string | undefined;
 
   const isOpen = (port: number) => openPorts.includes(port);
 
@@ -45,7 +39,7 @@ async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
     if (opts.activeProbes) {
       const pjl = await pjlInfo(host, 9100, opts.tcpTimeoutMs);
       if (pjl) {
-        vendor = vendor ?? guessVendor(pjl);
+        identity.push(pjl);
         const evidence = pjl.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, " ").trim().slice(0, 400);
         findings.push(makeFinding("pjl-unauthenticated", host, { port: 9100, protocol: "PJL", evidence }));
       }
@@ -56,7 +50,7 @@ async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
   if (isOpen(80)) {
     const probe = await httpProbe(host, 80, "http", opts.tcpTimeoutMs, opts.activeProbes);
     if (probe?.reachable) {
-      vendor = vendor ?? guessVendor(`${probe.server} ${probe.title}`);
+      identity.push(`${probe.server ?? ""} ${probe.title ?? ""}`);
       findings.push(makeFinding("http-admin-plaintext", host, { port: 80, protocol: "HTTP", evidence: probe.server || probe.title }));
       if (!probe.requiresAuth && probe.statusCode && probe.statusCode < 400) {
         findings.push(makeFinding("http-admin-noauth", host, { port: 80, protocol: "HTTP" }));
@@ -69,7 +63,7 @@ async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
   if (isOpen(443)) {
     const probe = await httpProbe(host, 443, "https", opts.tcpTimeoutMs, opts.activeProbes);
     if (probe?.reachable) {
-      vendor = vendor ?? guessVendor(`${probe.server} ${probe.title}`);
+      identity.push(`${probe.server ?? ""} ${probe.title ?? ""}`);
       findings.push(makeFinding("tls-weak", host, { port: 443, protocol: "HTTPS", evidence: probe.server }));
       if (probe.defaultCredential) {
         findings.push(makeFinding("http-default-credentials", host, { port: 443, protocol: "HTTPS", evidence: probe.defaultCredential }));
@@ -81,17 +75,25 @@ async function scanHost(host: string, opts: ScanOptions): Promise<HostResult> {
   if (opts.activeProbes) {
     const snmp = await snmpDefaultCommunity(host, opts.tcpTimeoutMs);
     if (snmp?.ok) {
-      vendor = vendor ?? guessVendor(snmp.sysDescr);
+      if (snmp.sysDescr) identity.push(snmp.sysDescr);
       const evidence = `community="${snmp.community}" ${snmp.version}${snmp.sysDescr ? ` | ${snmp.sysDescr.slice(0, 200)}` : ""}`;
       findings.push(makeFinding("snmp-default-community", host, { port: 161, protocol: "SNMP", evidence }));
     }
   }
+
+  // Fingerprint from everything we learned.
+  const identityText = identity.join(" ").trim();
+  const vendor = guessVendor(identityText);
+  const deviceType = classifyDevice(identityText);
+  const model = extractModel(identityText);
 
   return {
     address: host,
     online,
     openPorts,
     vendor,
+    model,
+    deviceType,
     ports: portResults.map((p) => ({ port: p.port, open: p.open, banner: p.banner })),
     findings,
   };

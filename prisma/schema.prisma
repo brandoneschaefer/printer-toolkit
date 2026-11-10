@@ -196,6 +196,8 @@ model AuditHost {
   online    Boolean @default(false)
   openPorts Int[]
   vendor    String?
+  model     String?
+  deviceType String?
 
   audit    Audit     @relation(fields: [auditId], references: [id], onDelete: Cascade)
   findings Finding[]

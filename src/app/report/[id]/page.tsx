@@ -30,6 +30,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const counts: Record<string, number> = summary?.severity ?? { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
   const groups = groupFindingsByHost(audit.findings);
   const responding = audit.hosts.filter((h) => h.online);
+  const deviceByHost = new Map(
+    audit.hosts.map((h) => [
+      h.address,
+      [h.deviceType, h.vendor, h.model && h.model.toLowerCase() !== (h.vendor ?? "").toLowerCase() ? h.model : null]
+        .filter(Boolean)
+        .join(" · "),
+    ])
+  );
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 text-slate-900">
@@ -113,7 +121,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <div className="mt-3 space-y-5">
             {groups.map((group) => (
               <div key={group.host} className="avoid-break">
-                <div className="mb-2 font-mono text-sm font-semibold text-slate-800">{group.host}</div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="font-mono text-sm font-semibold text-slate-800">{group.host}</span>
+                  {deviceByHost.get(group.host) && (
+                    <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 ring-1 ring-brand-200">
+                      {deviceByHost.get(group.host)}
+                    </span>
+                  )}
+                </div>
                 <div className="space-y-3">
                   {group.findings.map((f) => (
                     <div key={f.id} className="avoid-break rounded-lg border border-slate-200 p-4">
@@ -144,13 +159,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         <h2 className="mt-8 text-lg font-bold text-slate-900">Responding hosts</h2>
         <table className="mt-3 w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-xs uppercase text-slate-400">
-            <tr><th className="py-2">Address</th><th className="py-2">Vendor</th><th className="py-2">Open ports</th></tr>
+            <tr><th className="py-2">Address</th><th className="py-2">Device</th><th className="py-2">Open ports</th></tr>
           </thead>
           <tbody>
             {responding.map((h) => (
               <tr key={h.id} className="border-b border-slate-100">
                 <td className="py-2 font-mono text-slate-800">{h.address}</td>
-                <td className="py-2 text-slate-600">{h.vendor ?? "—"}</td>
+                <td className="py-2 text-slate-600">{deviceByHost.get(h.address) || "—"}</td>
                 <td className="py-2 font-mono text-slate-500">{h.openPorts.length ? h.openPorts.join(", ") : "—"}</td>
               </tr>
             ))}

@@ -8,7 +8,16 @@ interface Host {
   address: string;
   online: boolean;
   vendor?: string | null;
+  model?: string | null;
+  deviceType?: string | null;
   openPorts: number[];
+}
+
+function deviceLabel(h: Host): string {
+  const parts = [h.deviceType, h.vendor].filter(Boolean);
+  const head = parts.join(" · ");
+  if (head && h.model && h.model.toLowerCase() !== (h.vendor ?? "").toLowerCase()) return `${head} — ${h.model}`;
+  return head || h.model || "—";
 }
 
 export function HostTable({ hosts }: { hosts: Host[] }) {
@@ -24,7 +33,7 @@ export function HostTable({ hosts }: { hosts: Host[] }) {
           <tr>
             <th className="px-4 py-3">Address</th>
             <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Vendor</th>
+            <th className="px-4 py-3">Device</th>
             <th className="px-4 py-3">Open ports</th>
           </tr>
         </thead>
@@ -42,7 +51,7 @@ export function HostTable({ hosts }: { hosts: Host[] }) {
                   <span className="badge bg-slate-500/20 text-slate-400">No response</span>
                 )}
               </td>
-              <td className="px-4 py-3 text-slate-300">{h.vendor ?? "—"}</td>
+              <td className="px-4 py-3 text-slate-300">{deviceLabel(h)}</td>
               <td className="px-4 py-3 font-mono text-slate-400">{h.openPorts.length ? h.openPorts.join(", ") : "—"}</td>
             </tr>
           ))}

@@ -10,13 +10,14 @@
 // probes the fleet.
 
 import dns from "node:dns/promises";
+import { PRINTER_VENDOR_KEYWORDS } from "./scanner/vendors";
 
 const PRINTER_PORTS = [9100, 515, 631, 161, 23, 21, 80, 443];
 const PRINTER_HINTS = [
-  "jetdirect", "pjl", "ipp", "cups", "printer", "laserjet", "officejet", "chaiserver",
-  "lexmark", "canon", "epson", "brother", "xerox", "ricoh", "kyocera", "konica", "sharp", "oki",
+  "jetdirect", "pjl", "ipp", "cups", "printer", "chaiserver", "web image monitor",
+  ...PRINTER_VENDOR_KEYWORDS,
 ];
-const PRINTER_SUBDOMAIN_HINTS = ["print", "printer", "mfp", "copier", "scan", "jetdirect"];
+const PRINTER_SUBDOMAIN_HINTS = ["print", "printer", "mfp", "copier", "copy", "scan", "scanner", "jetdirect", "bizhub", "ricoh", "xerox"];
 
 export type Severity = "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 

@@ -29,6 +29,14 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
     summary?.severity ?? { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
 
   const findingGroups = groupFindingsByHost(audit.findings);
+  const deviceByHost = new Map(
+    audit.hosts.map((h) => [
+      h.address,
+      [h.deviceType, h.vendor, h.model && h.model.toLowerCase() !== (h.vendor ?? "").toLowerCase() ? h.model : null]
+        .filter(Boolean)
+        .join(" · "),
+    ])
+  );
 
   return (
     <div className="space-y-6">
@@ -105,8 +113,11 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
               <div className="space-y-6">
                 {findingGroups.map((group) => (
                   <div key={group.host}>
-                    <div className="mb-2 flex items-center gap-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
                       <span className="font-mono text-sm font-semibold text-slate-200">{group.host}</span>
+                      {deviceByHost.get(group.host) && (
+                        <span className="badge bg-brand-500/15 text-brand-300">{deviceByHost.get(group.host)}</span>
+                      )}
                       <span className="text-xs text-slate-500">
                         {group.findings.length} finding{group.findings.length === 1 ? "" : "s"}
                       </span>

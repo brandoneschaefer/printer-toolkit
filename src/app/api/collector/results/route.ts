@@ -28,6 +28,8 @@ const hostSchema = z.object({
   online: z.boolean(),
   openPorts: z.array(z.number().int().min(0).max(65535)).max(64),
   vendor: z.string().max(64).optional(),
+  model: z.string().max(120).optional(),
+  deviceType: z.string().max(40).optional(),
   findings: z.array(findingSchema).max(500),
 });
 
@@ -69,6 +71,8 @@ export async function POST(req: NextRequest) {
     online: h.online,
     openPorts: h.openPorts,
     vendor: h.vendor,
+    model: h.model,
+    deviceType: h.deviceType,
     ports: [],
     findings: h.findings,
   })) as HostResult[];

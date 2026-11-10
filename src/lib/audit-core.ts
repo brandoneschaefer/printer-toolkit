@@ -31,6 +31,8 @@ export async function persistResults(auditId: string, hosts: HostResult[]): Prom
           online: h.online,
           openPorts: h.openPorts,
           vendor: h.vendor,
+          model: h.model,
+          deviceType: h.deviceType,
         },
       });
       if (h.findings.length > 0) {

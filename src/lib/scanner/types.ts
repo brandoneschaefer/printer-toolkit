@@ -24,6 +24,8 @@ export interface HostResult {
   online: boolean;
   openPorts: number[];
   vendor?: string;
+  model?: string;
+  deviceType?: string;
   ports: PortResult[];
   findings: RawFinding[];
 }

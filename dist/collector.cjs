@@ -8319,17 +8319,115 @@ function makeFinding(checkId, host, opts = {}) {
   };
 }
 
-// src/lib/scanner/index.ts
+// src/lib/scanner/vendors.ts
+var VENDOR_HINTS = [
+  ["hewlett", "HP"],
+  ["jetdirect", "HP"],
+  ["chaiserver", "HP"],
+  ["laserjet", "HP"],
+  ["officejet", "HP"],
+  ["designjet", "HP"],
+  ["lexmark", "Lexmark"],
+  ["imagerunner", "Canon"],
+  ["imageclass", "Canon"],
+  ["canon", "Canon"],
+  ["imagepress", "Canon"],
+  ["remote ui", "Canon"],
+  ["epson", "Epson"],
+  ["workforce", "Epson"],
+  ["brother", "Brother"],
+  ["mfc-", "Brother"],
+  ["hl-", "Brother"],
+  ["dcp-", "Brother"],
+  ["workcentre", "Xerox"],
+  ["versalink", "Xerox"],
+  ["altalink", "Xerox"],
+  ["centreware", "Xerox"],
+  ["phaser", "Xerox"],
+  ["xerox", "Xerox"],
+  ["aficio", "Ricoh"],
+  ["web image monitor", "Ricoh"],
+  ["ricoh", "Ricoh"],
+  ["savin", "Ricoh"],
+  ["lanier", "Ricoh"],
+  ["nashuatec", "Ricoh"],
+  ["taskalfa", "Kyocera"],
+  ["ecosys", "Kyocera"],
+  ["command center", "Kyocera"],
+  ["kyocera", "Kyocera"],
+  ["bizhub", "Konica Minolta"],
+  ["develop ineo", "Konica Minolta"],
+  ["konica", "Konica Minolta"],
+  ["minolta", "Konica Minolta"],
+  ["e-studio", "Toshiba"],
+  ["estudio", "Toshiba"],
+  ["e-bridge", "Toshiba"],
+  ["toshiba", "Toshiba"],
+  ["okidata", "OKI"],
+  ["oki ", "OKI"],
+  ["samsung", "Samsung"],
+  ["dell", "Dell"],
+  ["pantum", "Pantum"],
+  ["muratec", "Muratec"],
+  ["zebra", "Zebra"],
+  ["sato", "SATO"],
+  ["primera", "Primera"],
+  ["fiery", "EFI Fiery"],
+  ["sharp", "Sharp"]
+];
+var MFP_HINTS = [
+  "imagerunner",
+  "imagepress",
+  "workcentre",
+  "versalink",
+  "altalink",
+  "aficio",
+  "bizhub",
+  "taskalfa",
+  "e-studio",
+  "estudio",
+  "mfc-",
+  "multifunction",
+  "mfp",
+  "copier",
+  "savin",
+  "develop ineo",
+  "versant",
+  "accuriopress",
+  "workforce pro",
+  "ecosys m",
+  "colorqube",
+  "e-bridge"
+];
+var PRINTER_HINTS = ["laserjet", "officejet", "designjet", "phaser", "ecosys p", "hl-", "printer", "print server", "jetdirect"];
 function guessVendor(text) {
   if (!text) return void 0;
-  const t = text.toLowerCase();
-  const vendors = ["hp", "hewlett", "lexmark", "canon", "epson", "brother", "xerox", "ricoh", "kyocera", "konica", "sharp", "dell", "samsung", "oki", "toshiba"];
-  const hit = vendors.find((v) => t.includes(v));
-  if (!hit) return void 0;
-  return hit === "hewlett" ? "HP" : hit.toUpperCase();
+  const t = ` ${text.toLowerCase()} `;
+  for (const [kw, name] of VENDOR_HINTS) {
+    if (t.includes(kw)) return name;
+  }
+  return void 0;
 }
+function classifyDevice(text) {
+  if (!text) return void 0;
+  const t = text.toLowerCase();
+  if (MFP_HINTS.some((h) => t.includes(h))) return "Copier / MFP";
+  if (PRINTER_HINTS.some((h) => t.includes(h))) return "Printer";
+  return void 0;
+}
+function extractModel(text) {
+  if (!text) return void 0;
+  const cleaned = text.replace(/[\x00-\x1f]+/g, " ").replace(/\s+/g, " ").trim();
+  const quoted = cleaned.match(/"([^"]{3,60})"/);
+  if (quoted) return quoted[1].trim();
+  return cleaned.slice(0, 60) || void 0;
+}
+var PRINTER_VENDOR_KEYWORDS = Array.from(new Set(VENDOR_HINTS.map(([k]) => k.trim()).filter((k) => k.length > 2)));
+
+// src/lib/scanner/index.ts
 async function scanHost(host, opts) {
   const findings = [];
+  const identity = [];
   const portResults = await Promise.all(
     PRINTER_PORTS.map(async (p) => {
       const res = await probePort(host, p.port, opts.tcpTimeoutMs, p.readBanner);
@@ -8338,7 +8436,6 @@ async function scanHost(host, opts) {
   );
   const openPorts = portResults.filter((p) => p.open).map((p) => p.port);
   const online = openPorts.length > 0;
-  let vendor;
   const isOpen = (port) => openPorts.includes(port);
   if (isOpen(23)) findings.push(makeFinding("telnet-enabled", host, { port: 23, protocol: "TELNET" }));
   if (isOpen(21)) findings.push(makeFinding("ftp-enabled", host, { port: 21, protocol: "FTP" }));
@@ -8349,7 +8446,7 @@ async function scanHost(host, opts) {
     if (opts.activeProbes) {
       const pjl = await pjlInfo(host, 9100, opts.tcpTimeoutMs);
       if (pjl) {
-        vendor = vendor ?? guessVendor(pjl);
+        identity.push(pjl);
         const evidence = pjl.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, " ").trim().slice(0, 400);
         findings.push(makeFinding("pjl-unauthenticated", host, { port: 9100, protocol: "PJL", evidence }));
       }
@@ -8358,7 +8455,7 @@ async function scanHost(host, opts) {
   if (isOpen(80)) {
     const probe = await httpProbe(host, 80, "http", opts.tcpTimeoutMs, opts.activeProbes);
     if (probe?.reachable) {
-      vendor = vendor ?? guessVendor(`${probe.server} ${probe.title}`);
+      identity.push(`${probe.server ?? ""} ${probe.title ?? ""}`);
       findings.push(makeFinding("http-admin-plaintext", host, { port: 80, protocol: "HTTP", evidence: probe.server || probe.title }));
       if (!probe.requiresAuth && probe.statusCode && probe.statusCode < 400) {
         findings.push(makeFinding("http-admin-noauth", host, { port: 80, protocol: "HTTP" }));
@@ -8371,7 +8468,7 @@ async function scanHost(host, opts) {
   if (isOpen(443)) {
     const probe = await httpProbe(host, 443, "https", opts.tcpTimeoutMs, opts.activeProbes);
     if (probe?.reachable) {
-      vendor = vendor ?? guessVendor(`${probe.server} ${probe.title}`);
+      identity.push(`${probe.server ?? ""} ${probe.title ?? ""}`);
       findings.push(makeFinding("tls-weak", host, { port: 443, protocol: "HTTPS", evidence: probe.server }));
       if (probe.defaultCredential) {
         findings.push(makeFinding("http-default-credentials", host, { port: 443, protocol: "HTTPS", evidence: probe.defaultCredential }));
@@ -8381,16 +8478,22 @@ async function scanHost(host, opts) {
   if (opts.activeProbes) {
     const snmp = await snmpDefaultCommunity(host, opts.tcpTimeoutMs);
     if (snmp?.ok) {
-      vendor = vendor ?? guessVendor(snmp.sysDescr);
+      if (snmp.sysDescr) identity.push(snmp.sysDescr);
       const evidence = `community="${snmp.community}" ${snmp.version}${snmp.sysDescr ? ` | ${snmp.sysDescr.slice(0, 200)}` : ""}`;
       findings.push(makeFinding("snmp-default-community", host, { port: 161, protocol: "SNMP", evidence }));
     }
   }
+  const identityText = identity.join(" ").trim();
+  const vendor = guessVendor(identityText);
+  const deviceType = classifyDevice(identityText);
+  const model = extractModel(identityText);
   return {
     address: host,
     online,
     openPorts,
     vendor,
+    model,
+    deviceType,
     ports: portResults.map((p) => ({ port: p.port, open: p.open, banner: p.banner })),
     findings
   };
