@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
@@ -18,6 +19,7 @@ export interface CheckState {
   ok?: boolean;
   error?: string;
   result?: ReconResult;
+  shareToken?: string;
 }
 
 const RATE_LIMIT_PER_HOUR = 8;
@@ -125,12 +127,19 @@ export async function createBulkCheckAction(_prev: BulkCreateState, formData: Fo
 // Operator-only: run a check by domain alone (no email, no lead capture, no
 // rate limit). Requires an authenticated session. For researching prospects.
 export async function operatorCheckAction(_prev: CheckState, formData: FormData): Promise<CheckState> {
-  await requireTenant();
+  const { org } = await requireTenant();
   const domain = String(formData.get("domain") ?? "").trim();
   if (domain.length < 3) return { error: "Enter a domain, e.g. acme.com" };
 
   const result = await externalCheck(domain, env.shodanApiKey || undefined);
   if (!result) return { error: "That doesn't look like a valid domain. Try something like acme.com." };
   result.findings.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
-  return { ok: true, result };
+
+  // Save a shareable public report.
+  const token = randomBytes(12).toString("base64url");
+  await prisma.exposureReport.create({
+    data: { token, orgId: org.id, domain: result.domain, exposed: result.exposed, result: result as any },
+  });
+
+  return { ok: true, result, shareToken: token };
 }

@@ -54,8 +54,9 @@ model Organization {
   payments       Payment[]
   collectors     Collector[]
   schedules      Schedule[]
-  authorizations Authorization[]
-  bulkChecks     BulkCheck[]
+  authorizations  Authorization[]
+  bulkChecks      BulkCheck[]
+  exposureReports ExposureReport[]
 }
 
 // A formal, customer-signed authorization to perform security testing.
@@ -332,6 +333,21 @@ model BulkCheckDomain {
   bulk BulkCheck @relation(fields: [bulkId], references: [id], onDelete: Cascade)
 
   @@index([bulkId])
+}
+
+// A saved, shareable external-exposure report (public link, no login needed).
+model ExposureReport {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  orgId     String
+  domain    String
+  exposed   Boolean  @default(false)
+  result    Json
+  createdAt DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 // A captured lead from the public External Exposure Check.
