@@ -24,8 +24,55 @@ export type Severity = "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export interface ExposureFinding {
   severity: Severity;
   title: string;
-  detail: string;
+  detail: string; // plain-language "what this means"
+  recommendation: string; // best-practice fix
   source: string; // "Shodan", "Certificate Transparency", "DNS"
+}
+
+function portRecommendation(p: number): string {
+  switch (p) {
+    case 9100:
+      return "Block port 9100 from the internet at your firewall. This raw printing port should only be reachable from internal print servers — never the public internet. Disable raw printing if you use IPP/IPPS.";
+    case 631:
+      return "Restrict IPP (631) to your internal network. If remote printing is required, use IPPS (TLS) with authentication and a VPN, not direct internet exposure.";
+    case 515:
+      return "Disable LPD (515) or restrict it to internal print servers. It is a legacy cleartext protocol that should never face the internet.";
+    case 161:
+      return "Block SNMP (UDP 161) from the internet, change the default community strings, and prefer SNMPv3 with authentication. SNMP leaks device configuration.";
+    case 23:
+      return "Disable Telnet and block port 23 everywhere. Telnet sends credentials in cleartext. Manage the device over HTTPS or SSH on the internal network only.";
+    case 21:
+      return "Disable FTP (21) or restrict it to trusted internal hosts. Printer FTP is often unauthenticated and cleartext.";
+    case 80:
+      return "Do not expose the printer's web admin to the internet. Block port 80 at the firewall, serve management over HTTPS internally only, and set a strong admin password.";
+    case 443:
+      return "Even over HTTPS, printer/MFP management should not be internet-facing. Restrict it to your internal network or VPN and require a strong admin login.";
+    default:
+      return "Restrict this service to your internal network at the firewall. Printers and copiers should never be directly reachable from the internet.";
+  }
+}
+
+function portMeaning(p: number): string {
+  switch (p) {
+    case 9100:
+      return "Anyone on the internet can send raw print jobs and printer control commands (PJL/PCL/PostScript) to this device without logging in — including commands that read device info or manipulate jobs.";
+    case 631:
+      return "The device's printing service is reachable from the internet. If it isn't using TLS and authentication, print jobs and settings can be intercepted or abused.";
+    case 515:
+      return "A legacy line-printer service is reachable from the internet. It has weak, host-based access control and sends data in the clear.";
+    case 161:
+      return "The device answers network management queries from the internet. With a default community string, that exposes its configuration and can allow remote changes.";
+    case 23:
+      return "A cleartext remote-login service is reachable from the internet. Credentials and commands can be read by anyone watching the connection.";
+    case 21:
+      return "A file-transfer service is reachable from the internet. On printers this is frequently unauthenticated and unencrypted.";
+    case 80:
+      return "The device's web admin console is reachable from the internet over unencrypted HTTP, so the admin password and settings can be captured in transit.";
+    case 443:
+      return "The device's web admin console is reachable from the internet. Management interfaces should not be internet-facing even when encrypted.";
+    default:
+      return "This service is reachable from the internet and should normally be restricted to the internal network.";
+  }
 }
 
 export interface ReconResult {
@@ -122,17 +169,6 @@ function sevForPort(port: number): Severity {
   return "LOW";
 }
 
-function portDetail(p: number): string {
-  if (p === 9100) return "Raw/JetDirect printing port reachable from the internet — accepts unauthenticated print and control commands.";
-  if (p === 631) return "IPP printing reachable from the internet.";
-  if (p === 515) return "Legacy LPD printing reachable from the internet.";
-  if (p === 161) return "SNMP reachable from the internet — often exposes device config via default community strings.";
-  if (p === 23) return "Telnet reachable from the internet — cleartext remote management.";
-  if (p === 21) return "FTP reachable from the internet — often cleartext / default credentials.";
-  if (p === 80) return "Web management interface reachable over unencrypted HTTP from the internet.";
-  return `Service on port ${p} reachable from the internet.`;
-}
-
 // Shodan InternetDB: free, keyless summary per IP (ports, CPEs, hostnames,
 // tags, CVEs). https://internetdb.shodan.io/<ip>
 interface InternetDbHost {
@@ -200,7 +236,8 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
     findings.push({
       severity: "LOW",
       title: `Printer-related hostname published: ${s}`,
-      detail: "A device-looking hostname appears in certificate transparency logs. If it resolves publicly, it may be reachable from the internet.",
+      detail: "A printer/device-looking hostname appears in public certificate-transparency logs. If it resolves publicly, the device behind it may be reachable from the internet.",
+      recommendation: "Check whether this hostname points to a printer/MFP and whether it needs to be public. If it's a device, remove the public DNS record and keep it on the internal network behind the firewall/VPN.",
       source: "Certificate Transparency",
     });
   }
@@ -216,27 +253,38 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
       if (!host) continue;
       scanUsed = true;
       const hints = host.hints.map((h) => h.toLowerCase());
-      const printerPorts = host.ports.filter((pp) => PRINTER_PORTS.includes(pp));
-      for (const p of printerPorts) {
+      // Does anything about this host indicate it's actually a printer/MFP?
+      const hostPrinterSignal = PRINTER_HINTS.some((h) => hints.some((x) => x.includes(h)));
+      // Printing protocols are strong printer signals on their own.
+      const PRINTING_PROTOCOLS = [9100, 515, 631];
+      const hasPrintingProtocol = host.ports.some((pp) => PRINTING_PROTOCOLS.includes(pp));
+
+      for (const p of host.ports.filter((pp) => PRINTER_PORTS.includes(pp))) {
         const banner = host.banners[p] || "";
-        const looksPrinter =
-          [9100, 515, 631].includes(p) ||
-          PRINTER_HINTS.some((h) => banner.toLowerCase().includes(h) || hints.some((x) => x.includes(h)));
+        const portPrinterSignal = PRINTER_HINTS.some((h) => banner.toLowerCase().includes(h)) || hostPrinterSignal;
+        const isPrintingProtocol = PRINTING_PROTOCOLS.includes(p);
+        // Generic services (SNMP/Telnet/FTP/HTTP/HTTPS) are only reported when
+        // there is a printer signal — otherwise they're just the company's web
+        // servers / network gear, not printer exposure.
+        if (!isPrintingProtocol && !portPrinterSignal) continue;
         findings.push({
-          severity: looksPrinter ? sevForPort(p) : "LOW",
+          severity: sevForPort(p),
           title: `${ip}:${p} exposed to the internet${banner ? ` (${banner})` : ""}`,
-          detail: portDetail(p),
+          detail: portMeaning(p),
+          recommendation: portRecommendation(p),
           source: sourceLabel,
         });
       }
-      // CVEs only when this host actually exposes a printer-relevant port —
-      // keeps the report strictly printer-focused.
-      if (printerPorts.length > 0) {
+
+      // CVEs only when this host is actually a printer (printing protocol or a
+      // printer signal) — keeps the report strictly printer-focused.
+      if (hasPrintingProtocol || hostPrinterSignal) {
         for (const v of host.vulns) {
           findings.push({
             severity: "HIGH",
             title: `Known vulnerability indexed on ${ip}: ${v}`,
-            detail: "This printer-exposing host is flagged against a known CVE in internet-scan data. Verify and patch.",
+            detail: "This internet-facing printer/MFP is flagged against a published security vulnerability (CVE) in internet-scan data.",
+            recommendation: "Update the device firmware to the latest version from the manufacturer's security page — these CVEs are almost always fixed by a firmware update. Then confirm the device is no longer internet-facing.",
             source: sourceLabel,
           });
         }

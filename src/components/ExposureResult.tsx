@@ -57,7 +57,15 @@ export function ExposureResult({ result: r, showCta = true }: { result: ReconRes
                 </div>
                 <span className="text-xs text-slate-500">{f.source}</span>
               </div>
-              <p className="mt-2 text-sm text-slate-300">{f.detail}</p>
+              <p className="mt-2 text-sm text-slate-300">
+                <span className="font-semibold text-slate-200">What this means: </span>{f.detail}
+              </p>
+              {f.recommendation && (
+                <div className="mt-3 rounded-lg border border-brand-400/20 bg-brand-500/5 p-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-300">How to fix</span>
+                  <p className="mt-1 text-sm text-slate-200">{f.recommendation}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>

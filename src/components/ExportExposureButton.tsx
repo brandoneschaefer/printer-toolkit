@@ -11,10 +11,10 @@ export function ExportExposureButton({ result }: { result: ReconResult }) {
       `${result.domain},${result.exposed ? "exposed" : "clean"},${result.ips.length},${result.subdomains.length},${result.printerSubdomains.length}`
     );
     lines.push("");
-    lines.push("severity,title,source,detail");
+    lines.push("severity,title,source,what_it_means,how_to_fix");
     for (const f of result.findings) {
       const esc = (s: string) => `"${(s ?? "").replace(/"/g, "'")}"`;
-      lines.push(`${f.severity},${esc(f.title)},${esc(f.source)},${esc(f.detail)}`);
+      lines.push(`${f.severity},${esc(f.title)},${esc(f.source)},${esc(f.detail)},${esc(f.recommendation)}`);
     }
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
