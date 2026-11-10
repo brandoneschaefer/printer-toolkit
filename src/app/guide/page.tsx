@@ -7,9 +7,9 @@ export default async function GuidePage({
   searchParams: Promise<{ client?: string; contact?: string; device?: string }>;
 }) {
   const sp = await searchParams;
-  const { org, session } = await requireTenant();
+  const { session } = await requireTenant();
 
-  const provider = org.name;
+  const provider = "PRET";
   const client = sp.client?.trim() || "your organization";
   const contact = sp.contact?.trim() || session.email;
   const device = sp.device?.trim() || "PRET Monitoring Sensor";
