@@ -329,6 +329,7 @@ model BulkCheckDomain {
   subdomains Int     @default(0)
   findings   Int     @default(0)
   top        String?
+  shareToken String?
 
   bulk BulkCheck @relation(fields: [bulkId], references: [id], onDelete: Cascade)
 

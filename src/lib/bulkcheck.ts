@@ -2,6 +2,7 @@
 // fallback). DNS + certificate-transparency only — no Shodan — so it is free
 // and safe to run over large lists. No "server-only": the worker imports it.
 
+import { randomBytes } from "node:crypto";
 import { prisma } from "./db";
 import { externalCheck, SEVERITY_RANK } from "./recon";
 
@@ -38,6 +39,11 @@ export async function runBulkCheckJob(bulkId: string): Promise<void> {
         await prisma.bulkCheckDomain.update({ where: { id: d.id }, data: { status: "invalid" } });
       } else {
         r.findings.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+        // Save a shareable standalone report for this domain.
+        const token = randomBytes(12).toString("base64url");
+        await prisma.exposureReport.create({
+          data: { token, orgId: bulk.orgId, domain: r.domain, exposed: r.exposed, result: r as any },
+        });
         await prisma.bulkCheckDomain.update({
           where: { id: d.id },
           data: {
@@ -47,6 +53,7 @@ export async function runBulkCheckJob(bulkId: string): Promise<void> {
             subdomains: r.subdomains.length,
             findings: r.findings.length,
             top: r.findings[0]?.title ?? null,
+            shareToken: token,
           },
         });
       }

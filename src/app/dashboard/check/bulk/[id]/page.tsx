@@ -4,6 +4,7 @@ import { requireTenant } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { ExportBulkButton } from "@/components/ExportBulkButton";
+import { CopyShareLink } from "@/components/CopyShareLink";
 import { StatusPill } from "@/components/SeverityBadge";
 import { dateTime } from "@/lib/format";
 
@@ -69,6 +70,7 @@ export default async function BulkDetailPage({ params }: { params: Promise<{ id:
                 <th className="px-4 py-3">Subdomains</th>
                 <th className="px-4 py-3">Findings</th>
                 <th className="px-4 py-3">Top finding</th>
+                <th className="px-4 py-3">Report</th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +90,7 @@ export default async function BulkDetailPage({ params }: { params: Promise<{ id:
                   <td className="px-4 py-3 text-slate-300">{r.subdomains}</td>
                   <td className="px-4 py-3 text-slate-300">{r.findings}</td>
                   <td className="px-4 py-3 text-slate-400">{r.top ?? "—"}</td>
+                  <td className="px-4 py-3">{r.shareToken ? <CopyShareLink token={r.shareToken} /> : "—"}</td>
                 </tr>
               ))}
             </tbody>
