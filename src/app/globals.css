@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-ink-900 text-slate-200 antialiased;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand-400/60 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+  }
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10;
+  }
+  .card {
+    @apply rounded-xl border border-white/10 bg-ink-800/80 p-5 shadow-lg shadow-black/20;
+  }
+  .input {
+    @apply w-full rounded-lg border border-white/10 bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-300;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
+
+.sev-INFO { @apply bg-slate-500/20 text-slate-300; }
+.sev-LOW { @apply bg-sky-500/20 text-sky-300; }
+.sev-MEDIUM { @apply bg-amber-500/20 text-amber-300; }
+.sev-HIGH { @apply bg-orange-500/20 text-orange-300; }
+.sev-CRITICAL { @apply bg-red-500/25 text-red-300; }

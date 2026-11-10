@@ -1,0 +1,251 @@
+// SentinelPrint data model
+// Multi-tenant printer security auditing SaaS.
+//
+// Tenancy: an Organization is the tenant boundary. Every billable/auditable
+// record carries orgId and all queries are scoped to the caller's active org.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & tenancy
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  audits       Audit[]      @relation("AuditCreatedBy")
+  targets      Target[]     @relation("TargetCreatedBy")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model Organization {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  createdAt DateTime     @default(now())
+
+  // Billing state (Stripe customer + current entitlements)
+  stripeCustomerId   String?
+  auditCredits       Int                @default(0) // one-time audits purchased & unused
+  subscriptionStatus SubscriptionStatus @default(NONE)
+  subscriptionPlan   String?
+  stripeSubscriptionId String?
+  currentPeriodEnd   DateTime?
+
+  memberships Membership[]
+  targets     Target[]
+  audits      Audit[]
+  payments    Payment[]
+  collectors  Collector[]
+}
+
+model Membership {
+  id     String @id @default(cuid())
+  userId String
+  orgId  String
+  role   Role   @default(OWNER)
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+// ---------------------------------------------------------------------------
+// Scan scope / authorization
+// A tenant may only audit hosts it has registered AND attested it is
+// authorized to test. This is the consent gate for the whole product.
+// ---------------------------------------------------------------------------
+
+model Target {
+  id         String   @id @default(cuid())
+  orgId      String
+  label      String
+  // A single host (IPv4/hostname) or CIDR range, e.g. 10.0.4.0/28
+  value      String
+  // Tenant attestation that they own / are authorized to test this scope.
+  authorized Boolean  @default(false)
+  notes      String?
+  createdById String?
+  createdAt  DateTime @default(now())
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("TargetCreatedBy", fields: [createdById], references: [id])
+
+  @@index([orgId])
+}
+
+// ---------------------------------------------------------------------------
+// Audits & findings
+// ---------------------------------------------------------------------------
+
+enum AuditStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AuditKind {
+  ONE_TIME // consumed an audit credit
+  SUBSCRIPTION // covered by active monitoring subscription
+}
+
+// Where a scan actually executes.
+//   CLOUD     - the control plane runs the scanner (internet-facing targets)
+//   COLLECTOR - an on-prem agent inside the customer network claims and runs it
+enum ScanExecutor {
+  CLOUD
+  COLLECTOR
+}
+
+// An on-prem scan agent registered to a tenant. It authenticates with a
+// bearer token (only the bcrypt hash is stored) and polls for jobs scoped to
+// its organization.
+model Collector {
+  id         String    @id @default(cuid())
+  orgId      String
+  name       String
+  tokenHash  String
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  createdById String?
+
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  audits Audit[]
+
+  @@index([orgId])
+}
+
+model Audit {
+  id          String      @id @default(cuid())
+  orgId       String
+  name        String
+  status      AuditStatus @default(QUEUED)
+  kind        AuditKind
+  executor    ScanExecutor @default(CLOUD)
+  collectorId String?
+  claimedAt   DateTime?
+  // Comma-free JSON snapshot of the hosts/scope requested at run time.
+  scope       Json
+  riskScore   Int         @default(0) // 0-100, higher = worse
+  summary     Json? // counts by severity + host stats
+  error       String?
+  createdById String?
+  createdAt   DateTime    @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation("AuditCreatedBy", fields: [createdById], references: [id])
+  collector Collector?   @relation(fields: [collectorId], references: [id], onDelete: SetNull)
+  hosts     AuditHost[]
+  findings  Finding[]
+
+  @@index([orgId])
+  @@index([status])
+}
+
+model AuditHost {
+  id        String  @id @default(cuid())
+  auditId   String
+  address   String
+  hostname  String?
+  online    Boolean @default(false)
+  openPorts Int[]
+  vendor    String?
+
+  audit    Audit     @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  findings Finding[]
+
+  @@index([auditId])
+}
+
+enum Severity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Finding {
+  id          String   @id @default(cuid())
+  auditId     String
+  hostId      String?
+  host        String
+  port        Int?
+  protocol    String? // PJL, SNMP, IPP, RAW, LPD, HTTP, HTTPS, TLS
+  checkId     String // stable rule id, e.g. "snmp-default-community"
+  title       String
+  severity    Severity
+  description String
+  evidence    String?
+  recommendation String
+  createdAt   DateTime @default(now())
+
+  audit     Audit      @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditHost AuditHost? @relation(fields: [hostId], references: [id], onDelete: SetNull)
+
+  @@index([auditId])
+  @@index([severity])
+}
+
+// ---------------------------------------------------------------------------
+// Billing
+// ---------------------------------------------------------------------------
+
+enum SubscriptionStatus {
+  NONE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum PaymentKind {
+  ONE_TIME_AUDIT
+  SUBSCRIPTION
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orgId           String
+  kind            PaymentKind
+  status          PaymentStatus @default(PENDING)
+  amountCents     Int           @default(0)
+  currency        String        @default("usd")
+  stripeSessionId String?
+  stripeInvoiceId String?
+  description     String?
+  createdAt       DateTime      @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
