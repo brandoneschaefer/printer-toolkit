@@ -39,6 +39,13 @@ export const env = {
     maxHosts: int("SCANNER_MAX_HOSTS", 256),
     tcpTimeoutMs: int("SCANNER_TCP_TIMEOUT_MS", 2500),
   },
+
+  // When set, cloud scans are dispatched to a BullMQ worker over Redis.
+  // When empty, scans run in-process (fine for single-node / local dev).
+  redisUrl: str("REDIS_URL"),
+
+  // How often the worker checks for due scheduled re-scans (ms).
+  schedulerTickMs: int("SCHEDULER_TICK_MS", 60000),
 };
 
 // Pricing shown in the UI. (Stripe is the source of truth for real charges.)

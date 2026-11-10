@@ -16,6 +16,14 @@ databases:
     plan: basic-256mb
 
 services:
+  # Redis / Key Value store backing the BullMQ scan queue.
+  - type: redis
+    name: sentinelprint-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: [] # only reachable from this Render private network
+
+  # Web control plane (UI, API, billing).
   - type: web
     name: sentinelprint
     runtime: node
@@ -29,6 +37,11 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: sentinelprint-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sentinelprint-redis
+          type: redis
           property: connectionString
       - key: NODE_VERSION
         value: "22"
@@ -54,3 +67,30 @@ services:
         sync: false
       - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
         sync: false
+
+  # Background worker: runs cloud scans off the queue + fires scheduled re-scans.
+  - type: worker
+    name: sentinelprint-worker
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm run worker
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sentinelprint-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: sentinelprint-redis
+          type: redis
+          property: connectionString
+      - key: NODE_VERSION
+        value: "22"
+      - key: SCANNER_MAX_HOSTS
+        value: "256"
+      - key: SCANNER_TCP_TIMEOUT_MS
+        value: "2500"
+      - key: SCHEDULER_TICK_MS
+        value: "60000"

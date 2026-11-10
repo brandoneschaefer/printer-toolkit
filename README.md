@@ -53,6 +53,9 @@ and restrict raw printing to trusted print servers.
   (`src/lib/auth.ts`). No external auth dependency.
 - **Scan engine** (`src/lib/scanner/`) — pure-Node TCP/HTTP probes plus
   `net-snmp`, with bounded concurrency and a hard host cap.
+- **Background worker** (`worker/`) — a BullMQ/Redis consumer that runs cloud
+  scans off the web request path and fires scheduled re-scans on a timer. Falls
+  back to in-process execution when no `REDIS_URL` is set.
 - **Stripe** — one-time Checkout for audits, subscription Checkout for
   monitoring, webhook-driven entitlements, and a **mock mode** so the whole flow
   works locally with no Stripe account.
@@ -91,8 +94,13 @@ src/lib/
   audit.ts                  Audit lifecycle: entitlement -> create -> run -> persist
   billing.ts  stripe.ts     Stripe Checkout/portal + mock mode + entitlements
   collector.ts              Collector registration + token auth
+  audit-core.ts             Scan execution + scheduling (worker-safe, no server-only)
+  queue.ts                  BullMQ dispatch with in-process fallback
+  schedule-runner.ts        Due-schedule processor (runs in the worker)
   scanner/                  Non-destructive assessment engine (shared cloud + agent)
-  actions/                  Server actions (auth, targets, audits, billing, collectors)
+  actions/                  Server actions (auth, targets, audits, billing, collectors, schedules)
+worker/
+  index.ts                  Background worker: scan queue consumer + scheduler tick
 src/app/
   page.tsx                  Marketing + pricing landing
   login/ register/          Auth
@@ -130,6 +138,22 @@ npm run dev                # http://localhost:3000
 ```
 
 Log in with **demo@acme.test / password123**.
+
+### Worker & scheduled re-scans
+
+Cloud scans and scheduled re-scans run in a separate worker process. Start Redis
+and the worker alongside the app:
+
+```bash
+# set REDIS_URL in .env, e.g. REDIS_URL="redis://localhost:6379"
+npm run worker
+```
+
+The worker consumes cloud scans from the BullMQ queue and, every
+`SCHEDULER_TICK_MS`, creates audits for any due schedules (**Dashboard →
+Schedules**). Scheduled re-scans require an active monitoring subscription.
+Without `REDIS_URL`, cloud scans run in-process and the worker is only needed to
+drive schedules.
 
 ### Try a real audit
 

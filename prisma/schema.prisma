@@ -53,6 +53,7 @@ model Organization {
   audits      Audit[]
   payments    Payment[]
   collectors  Collector[]
+  schedules   Schedule[]
 }
 
 model Membership {
@@ -219,6 +220,38 @@ enum SubscriptionStatus {
   ACTIVE
   PAST_DUE
   CANCELED
+}
+
+// ---------------------------------------------------------------------------
+// Scheduled re-scans (subscription feature)
+// ---------------------------------------------------------------------------
+
+enum ScheduleCadence {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Schedule {
+  id           String          @id @default(cuid())
+  orgId        String
+  name         String
+  // Target ids to scan on each run (resolved + authorization-checked at fire time).
+  targetIds    String[]
+  activeProbes Boolean         @default(true)
+  executor     ScanExecutor    @default(CLOUD)
+  collectorId  String?
+  cadence      ScheduleCadence
+  enabled      Boolean         @default(true)
+  lastRunAt    DateTime?
+  nextRunAt    DateTime
+  createdById  String?
+  createdAt    DateTime        @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([enabled, nextRunAt])
 }
 
 enum PaymentKind {
