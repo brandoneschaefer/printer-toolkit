@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireTenant } from "@/lib/tenant";
-import { createAudit, runAuditJob, EntitlementError, ScopeError } from "@/lib/audit";
+import { createAudit, EntitlementError, ScopeError } from "@/lib/audit";
+import { enqueueScan } from "@/lib/queue";
 import { runAuditSchema } from "@/lib/validation";
 
 export interface ActionState {
@@ -44,12 +45,10 @@ export async function runAuditAction(_prev: ActionState, formData: FormData): Pr
     return { error: err instanceof Error ? err.message : "Failed to start audit" };
   }
 
-  // CLOUD audits run in-process now; COLLECTOR audits wait for an on-prem agent
-  // to claim them, so we just leave them QUEUED.
+  // CLOUD audits are dispatched to the worker queue (or run in-process when no
+  // Redis is configured). COLLECTOR audits wait for an on-prem agent to claim.
   if (parsed.data.executor === "CLOUD") {
-    void runAuditJob(auditId).catch(() => {
-      /* errors are persisted on the audit record inside runAuditJob */
-    });
+    await enqueueScan(auditId);
   }
 
   revalidatePath("/dashboard/audits");

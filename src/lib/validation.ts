@@ -19,6 +19,15 @@ export const targetSchema = z.object({
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
+export const scheduleSchema = z.object({
+  name: z.string().min(1, "Schedule name is required").max(120),
+  targetIds: z.array(z.string()).min(1, "Select at least one target"),
+  cadence: z.enum(["DAILY", "WEEKLY", "MONTHLY"]),
+  activeProbes: z.boolean().default(true),
+  executor: z.enum(["CLOUD", "COLLECTOR"]).default("CLOUD"),
+  collectorId: z.string().optional().or(z.literal("")),
+});
+
 export const runAuditSchema = z.object({
   name: z.string().min(1, "Audit name is required").max(120),
   targetIds: z.array(z.string()).min(1, "Select at least one target"),
