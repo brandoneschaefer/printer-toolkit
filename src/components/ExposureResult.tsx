@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import type { ReconResult } from "@/lib/recon";
+import { ExportExposureButton } from "@/components/ExportExposureButton";
 
 export function ExposureResult({ result: r, showCta = true }: { result: ReconResult; showCta?: boolean }) {
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Results for {r.domain}</h2>
+        <ExportExposureButton result={r} />
+      </div>
       {r.exposed ? (
         <div className="card border-red-400/30 bg-red-500/5">
           <div className="flex items-center gap-2">
