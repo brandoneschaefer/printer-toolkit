@@ -7,10 +7,7 @@ import { dateTime } from "@/lib/format";
 import type { ReconResult } from "@/lib/recon";
 
 async function load(token: string) {
-  const report = await prisma.exposureReport.findUnique({
-    where: { token },
-    include: { org: { select: { name: true } } },
-  });
+  const report = await prisma.exposureReport.findUnique({ where: { token } });
   return report;
 }
 
@@ -35,20 +32,20 @@ export default async function PublicExposurePage({ params }: { params: Promise<{
   if (!report) notFound();
 
   const r = report.result as unknown as ReconResult;
-  const org = report.org?.name ?? "PRET";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-ink-900 via-ink-900 to-ink-800">
       <div className="mx-auto max-w-3xl px-6 py-10">
         {/* Brand header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-lg font-bold text-white">
-            <ShieldCheck className="h-6 w-6 text-brand-400" /> PRET
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-6 w-6 text-brand-400" />
+            <div className="leading-tight">
+              <div className="text-lg font-bold text-white">PRET</div>
+              <div className="text-xs text-slate-400">Printer Exploitation Toolkit</div>
+            </div>
           </div>
-          <div className="text-right text-xs text-slate-400">
-            <div>Prepared by {org}</div>
-            <div>{dateTime(report.createdAt)}</div>
-          </div>
+          <div className="text-right text-xs text-slate-400">{dateTime(report.createdAt)}</div>
         </div>
 
         {/* Hero verdict */}
@@ -125,7 +122,7 @@ export default async function PublicExposurePage({ params }: { params: Promise<{
           <Link href="/register" className="btn-primary mt-5 px-6 py-3 text-base">
             Get a full printer security audit
           </Link>
-          <p className="mt-3 text-xs text-slate-400">Prepared by {org} · Powered by PRET</p>
+          <p className="mt-3 text-xs text-slate-400">PRET · Printer Exploitation Toolkit</p>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
