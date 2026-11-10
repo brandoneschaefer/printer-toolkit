@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { externalCheck, SEVERITY_RANK, type ReconResult } from "@/lib/recon";
+import { requireTenant } from "@/lib/tenant";
 
 const schema = z.object({
   domain: z.string().min(3).max(253),
@@ -63,5 +64,18 @@ export async function externalCheckAction(_prev: CheckState, formData: FormData)
     },
   });
 
+  return { ok: true, result };
+}
+
+// Operator-only: run a check by domain alone (no email, no lead capture, no
+// rate limit). Requires an authenticated session. For researching prospects.
+export async function operatorCheckAction(_prev: CheckState, formData: FormData): Promise<CheckState> {
+  await requireTenant();
+  const domain = String(formData.get("domain") ?? "").trim();
+  if (domain.length < 3) return { error: "Enter a domain, e.g. acme.com" };
+
+  const result = await externalCheck(domain, env.shodanApiKey || undefined);
+  if (!result) return { error: "That doesn't look like a valid domain. Try something like acme.com." };
+  result.findings.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
   return { ok: true, result };
 }
