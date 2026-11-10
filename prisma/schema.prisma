@@ -287,6 +287,19 @@ enum PaymentStatus {
   REFUNDED
 }
 
+// A captured lead from the public External Exposure Check.
+model Lead {
+  id        String   @id @default(cuid())
+  domain    String
+  email     String
+  ip        String?
+  exposed   Boolean  @default(false)
+  summary   Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model Payment {
   id              String        @id @default(cuid())
   orgId           String

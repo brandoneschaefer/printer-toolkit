@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature, Magnet } from "lucide-react";
 import { getTenant, hasActiveSubscription } from "@/lib/tenant";
 import { logoutAction } from "@/lib/actions/auth";
 
@@ -25,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavLink href="/dashboard/collectors" icon={<Server className="h-4 w-4" />}>Collectors</NavLink>
           <NavLink href="/dashboard/audits" icon={<FileSearch className="h-4 w-4" />}>Audits</NavLink>
           <NavLink href="/dashboard/schedules" icon={<CalendarClock className="h-4 w-4" />}>Schedules</NavLink>
+          <NavLink href="/dashboard/leads" icon={<Magnet className="h-4 w-4" />}>Leads</NavLink>
           <NavLink href="/dashboard/billing" icon={<CreditCard className="h-4 w-4" />}>Billing</NavLink>
         </nav>
 

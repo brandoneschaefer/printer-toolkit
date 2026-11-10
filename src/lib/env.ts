@@ -69,6 +69,9 @@ export const env = {
 
   // How often the worker checks for due scheduled re-scans (ms).
   schedulerTickMs: int("SCHEDULER_TICK_MS", 60000),
+
+  // Shodan API key for the public External Exposure Check (optional).
+  shodanApiKey: str("SHODAN_API_KEY"),
 };
 
 // Pricing shown in the UI. (Stripe is the source of truth for real charges.)
