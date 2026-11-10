@@ -215,7 +215,8 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
       if (!host) continue;
       scanUsed = true;
       const hints = host.hints.map((h) => h.toLowerCase());
-      for (const p of host.ports.filter((pp) => PRINTER_PORTS.includes(pp))) {
+      const printerPorts = host.ports.filter((pp) => PRINTER_PORTS.includes(pp));
+      for (const p of printerPorts) {
         const banner = host.banners[p] || "";
         const looksPrinter =
           [9100, 515, 631].includes(p) ||
@@ -227,13 +228,17 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
           source: sourceLabel,
         });
       }
-      for (const v of host.vulns) {
-        findings.push({
-          severity: "HIGH",
-          title: `Known vulnerability indexed on ${ip}: ${v}`,
-          detail: "This host is flagged against a known CVE in internet-scan data. Verify and patch.",
-          source: sourceLabel,
-        });
+      // CVEs only when this host actually exposes a printer-relevant port —
+      // keeps the report strictly printer-focused.
+      if (printerPorts.length > 0) {
+        for (const v of host.vulns) {
+          findings.push({
+            severity: "HIGH",
+            title: `Known vulnerability indexed on ${ip}: ${v}`,
+            detail: "This printer-exposing host is flagged against a known CVE in internet-scan data. Verify and patch.",
+            source: sourceLabel,
+          });
+        }
       }
     }
     if (!scanUsed) notes.push(`No hosts for this domain are indexed in ${sourceLabel} (often a good sign).`);
