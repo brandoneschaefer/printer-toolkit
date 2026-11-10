@@ -42,10 +42,20 @@ export const env = {
 
   // Published collector image shown in the one-command Docker install snippet.
   collectorImage: str("COLLECTOR_IMAGE", "ghcr.io/brandoneschaefer/sentinelprint-collector:latest"),
-  // Raw URL of the Windows one-click PowerShell installer.
+  // Raw URL of the Windows one-click (admin) PowerShell installer.
   collectorInstallerUrl: str(
     "COLLECTOR_INSTALLER_URL",
     "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/install-collector.ps1"
+  ),
+  // Raw URL of the no-admin (per-user) Windows installer.
+  collectorUserInstallerUrl: str(
+    "COLLECTOR_USER_INSTALLER_URL",
+    "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/install-collector-user.ps1"
+  ),
+  // Raw URL of the Linux mini-appliance provisioning script.
+  collectorApplianceUrl: str(
+    "COLLECTOR_APPLIANCE_URL",
+    "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/appliance/provision.sh"
   ),
 
   // When set, cloud scans are dispatched to a BullMQ worker over Redis.

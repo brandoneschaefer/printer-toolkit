@@ -10,10 +10,14 @@ export function CollectorManager({
   appUrl,
   image,
   installerUrl,
+  userInstallerUrl,
+  applianceUrl,
 }: {
   appUrl: string;
   image: string;
   installerUrl: string;
+  userInstallerUrl: string;
+  applianceUrl: string;
 }) {
   const [state, formAction, pending] = useActionState(createCollectorAction, initial);
   const [copied, setCopied] = useState<string | null>(null);
@@ -104,29 +108,55 @@ export function CollectorManager({
               </button>
 
               <div className="mt-4 border-t border-white/10 pt-3">
-                <div className="mb-2 font-semibold text-slate-300">Or, advanced: run in an Administrator PowerShell</div>
+                <div className="mb-2 font-semibold text-slate-300">Admin one-liner (Administrator PowerShell)</div>
                 <CopyBlock
                   text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`}
                   copied={copied === "win"}
                   onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`, "win")}
                 />
               </div>
+
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="mb-1 font-semibold text-slate-300">No admin rights? (runs while this user is logged in)</div>
+                <p className="mb-2 text-slate-500">
+                  For PCs where no one has administrator access. Runs at logon instead of as a boot service — best on an
+                  always-signed-in PC. Paste into a normal PowerShell (no admin needed):
+                </p>
+                <CopyBlock
+                  text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${userInstallerUrl} | iex`}
+                  copied={copied === "winuser"}
+                  onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${userInstallerUrl} | iex`, "winuser")}
+                />
+              </div>
+
               <div className="mt-2 text-slate-500">
-                Installs a lightweight background service (no Docker). Auto-starts on boot, outbound HTTPS only.
-                Appears as “Online” here within a minute.
+                The .bat and admin options install a boot service. Outbound HTTPS only. Appears as “Online” within a minute.
               </div>
             </div>
           ) : (
             <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
-              <div className="mb-2 font-semibold text-slate-300">On any Linux host / server in the target network:</div>
+              <div className="mb-2 font-semibold text-slate-300">Docker — any Linux host / server in the target network:</div>
               <CopyBlock
-                text={`docker run -d --name sentinel-collector --restart unless-stopped --network host \\
+                text={`docker run -d --name pret-collector --restart unless-stopped --network host \\
   -e SENTINEL_URL=${appUrl} \\
   -e COLLECTOR_TOKEN=${state.token} \\
   ${image}`}
                 copied={copied === "dock"}
-                onCopy={() => copy(`docker run -d --name sentinel-collector --restart unless-stopped --network host -e SENTINEL_URL=${appUrl} -e COLLECTOR_TOKEN=${state.token} ${image}`, "dock")}
+                onCopy={() => copy(`docker run -d --name pret-collector --restart unless-stopped --network host -e SENTINEL_URL=${appUrl} -e COLLECTOR_TOKEN=${state.token} ${image}`, "dock")}
               />
+
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="mb-1 font-semibold text-slate-300">Mini-appliance (plug-and-play sensor)</div>
+                <p className="mb-2 text-slate-500">
+                  Provision a Raspberry Pi / mini-PC once, then ship it to the customer. Installs a systemd service that
+                  auto-starts on boot. Run on the box (one time):
+                </p>
+                <CopyBlock
+                  text={`curl -fsSL ${applianceUrl} | sudo bash -s -- ${state.token} ${appUrl}`}
+                  copied={copied === "appl"}
+                  onCopy={() => copy(`curl -fsSL ${applianceUrl} | sudo bash -s -- ${state.token} ${appUrl}`, "appl")}
+                />
+              </div>
               <div className="mt-2 text-slate-500">Outbound HTTPS only — no inbound ports.</div>
             </div>
           )}

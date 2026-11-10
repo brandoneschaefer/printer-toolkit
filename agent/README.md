@@ -37,11 +37,15 @@ In the app: **Dashboard → Collectors → Register a collector**. Copy the toke
 
 ## Install options
 
-| Method | Best for | How |
-|--------|----------|-----|
-| **Windows one-click** | Small offices with an always-on Windows PC | PowerShell one-liner (below) — installs a background service, no Docker |
-| **Docker** | Linux hosts, servers, NAS, appliances | `docker run` (below) |
-| **Node** | Development / custom | `npm run agent` (below) |
+| Method | Best for | Admin? | How |
+|--------|----------|--------|-----|
+| **Windows one-click (.bat)** | Small offices with an always-on Windows PC | One UAC click | Download + double-click — installs a boot service, no Docker |
+| **Windows no-admin** | PCs where no one has admin rights | None | `install-collector-user.ps1` — runs at the user's logon |
+| **Mini-appliance (Linux)** | Ship a plug-and-play sensor to a site | Root on the box (by you) | `appliance/provision.sh` — systemd service, boots and scans |
+| **Docker** | Linux hosts, servers, NAS | Docker access | `docker run` (below) |
+| **Node** | Development / custom | — | `npm run agent` (below) |
+
+See [`../appliance/README.md`](../appliance/README.md) for the mini-appliance build.
 
 ### Windows one-click (no Docker)
 

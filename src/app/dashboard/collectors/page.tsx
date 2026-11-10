@@ -27,7 +27,13 @@ export default async function CollectorsPage() {
         </p>
       </div>
 
-      <CollectorManager appUrl={env.appUrl} image={env.collectorImage} installerUrl={env.collectorInstallerUrl} />
+      <CollectorManager
+        appUrl={env.appUrl}
+        image={env.collectorImage}
+        installerUrl={env.collectorInstallerUrl}
+        userInstallerUrl={env.collectorUserInstallerUrl}
+        applianceUrl={env.collectorApplianceUrl}
+      />
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-white">Registered collectors ({collectors.length})</h2>
