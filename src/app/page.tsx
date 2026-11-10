@@ -48,8 +48,8 @@ export default async function LandingPage() {
           <Link href="/register" className="btn-primary px-6 py-3 text-base">
             Run your first audit
           </Link>
-          <Link href="/check" className="btn-ghost px-6 py-3 text-base">
-            Free exposure check
+          <Link href="#pricing" className="btn-ghost px-6 py-3 text-base">
+            View pricing
           </Link>
         </div>
       </section>

@@ -1,13 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { CheckForm } from "@/components/CheckForm";
+import { getTenant } from "@/lib/tenant";
 
 export const metadata = {
-  title: "Free Printer Exposure Check — PRET",
-  description: "Check your company's internet-facing printer exposure from just your domain. Passive, non-intrusive.",
+  title: "Printer Exposure Check — PRET",
+  description: "Check a company's internet-facing printer exposure from just a domain. Passive, non-intrusive.",
 };
 
-export default function CheckPage() {
+export default async function CheckPage() {
+  const tenant = await getTenant();
+  if (!tenant) redirect("/login");
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-ink-900 to-ink-800">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">

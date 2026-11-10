@@ -59,10 +59,13 @@ async function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T
 async function resolveIps(domain: string): Promise<string[]> {
   const out = new Set<string>();
   for (const host of [domain, `www.${domain}`]) {
-    try {
-      const a = await dns.resolve4(host);
-      a.forEach((ip) => out.add(ip));
-    } catch { /* ignore */ }
+    // Timeout-protected so a slow/missing resolver can never stall the check.
+    const a = await withTimeout(
+      dns.resolve4(host).catch(() => [] as string[]),
+      4000,
+      [] as string[]
+    );
+    a.forEach((ip) => out.add(ip));
   }
   return [...out].slice(0, 8);
 }
