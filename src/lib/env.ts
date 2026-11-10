@@ -40,6 +40,9 @@ export const env = {
     tcpTimeoutMs: int("SCANNER_TCP_TIMEOUT_MS", 2500),
   },
 
+  // Published collector image shown in the one-command install snippet.
+  collectorImage: str("COLLECTOR_IMAGE", "ghcr.io/brandoneschaefer/sentinelprint-collector:latest"),
+
   // When set, cloud scans are dispatched to a BullMQ worker over Redis.
   // When empty, scans run in-process (fine for single-node / local dev).
   redisUrl: str("REDIS_URL"),

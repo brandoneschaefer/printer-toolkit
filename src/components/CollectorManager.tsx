@@ -6,7 +6,7 @@ import { createCollectorAction, type CollectorActionState } from "@/lib/actions/
 
 const initial: CollectorActionState = {};
 
-export function CollectorManager({ appUrl }: { appUrl: string }) {
+export function CollectorManager({ appUrl, image }: { appUrl: string; image: string }) {
   const [state, formAction, pending] = useActionState(createCollectorAction, initial);
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -42,11 +42,14 @@ export function CollectorManager({ appUrl }: { appUrl: string }) {
           </p>
           <TokenRow label="Collector token" value={state.token} copied={copied === "tok"} onCopy={() => copy(state.token!, "tok")} />
           <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
-            <div className="mb-2 font-semibold text-slate-300">Run the collector (Docker):</div>
-            <pre className="overflow-x-auto whitespace-pre-wrap">{`docker run -d --network host \\
+            <div className="mb-2 font-semibold text-slate-300">Run the collector on any always-on machine inside the target network (Docker):</div>
+            <pre className="overflow-x-auto whitespace-pre-wrap">{`docker run -d --name sentinel-collector --restart unless-stopped --network host \\
   -e SENTINEL_URL=${appUrl} \\
   -e COLLECTOR_TOKEN=${state.token} \\
-  sentinelprint-collector`}</pre>
+  ${image}`}</pre>
+            <div className="mt-2 text-slate-500">
+              Outbound HTTPS only — no inbound ports. It will appear as “Online” here within a minute.
+            </div>
           </div>
         </div>
       )}

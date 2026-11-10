@@ -1,0 +1,44 @@
+name: Build collector image
+
+# Builds the on-prem collector agent as a container image and publishes it to
+# GitHub Container Registry (GHCR) so customers can run it with a single
+# `docker run` — no repo clone, no local build.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agent/**"
+      - "src/lib/scanner/**"
+      - "package.json"
+      - ".github/workflows/collector-image.yml"
+  workflow_dispatch: {}
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/sentinelprint-collector
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: agent/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ github.sha }}
