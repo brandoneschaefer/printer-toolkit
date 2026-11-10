@@ -57,6 +57,11 @@ export const env = {
     "COLLECTOR_APPLIANCE_URL",
     "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/appliance/provision.sh"
   ),
+  // Raw URL of the self-contained USB-installer builder (run once on your PC).
+  collectorUsbBuilderUrl: str(
+    "COLLECTOR_USB_BUILDER_URL",
+    "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/build-usb.ps1"
+  ),
 
   // When set, cloud scans are dispatched to a BullMQ worker over Redis.
   // When empty, scans run in-process (fine for single-node / local dev).

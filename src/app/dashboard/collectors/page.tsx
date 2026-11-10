@@ -2,6 +2,7 @@ import { requireTenant } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { CollectorManager } from "@/components/CollectorManager";
+import { GuideGenerator } from "@/components/GuideGenerator";
 import { deleteCollectorAction } from "@/lib/actions/collectors";
 import { dateTime } from "@/lib/format";
 import { Trash2, Server } from "lucide-react";
@@ -12,7 +13,7 @@ function isOnline(lastSeenAt: Date | null): boolean {
 }
 
 export default async function CollectorsPage() {
-  const { org } = await requireTenant();
+  const { org, session } = await requireTenant();
   const collectors = await prisma.collector.findMany({
     where: { orgId: org.id },
     orderBy: { createdAt: "desc" },
@@ -33,7 +34,10 @@ export default async function CollectorsPage() {
         installerUrl={env.collectorInstallerUrl}
         userInstallerUrl={env.collectorUserInstallerUrl}
         applianceUrl={env.collectorApplianceUrl}
+        usbBuilderUrl={env.collectorUsbBuilderUrl}
       />
+
+      <GuideGenerator defaultContact={session.email} />
 
       <div>
         <h2 className="mb-3 text-lg font-semibold text-white">Registered collectors ({collectors.length})</h2>

@@ -12,12 +12,14 @@ export function CollectorManager({
   installerUrl,
   userInstallerUrl,
   applianceUrl,
+  usbBuilderUrl,
 }: {
   appUrl: string;
   image: string;
   installerUrl: string;
   userInstallerUrl: string;
   applianceUrl: string;
+  usbBuilderUrl: string;
 }) {
   const [state, formAction, pending] = useActionState(createCollectorAction, initial);
   const [copied, setCopied] = useState<string | null>(null);
@@ -126,6 +128,20 @@ export function CollectorManager({
                   text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${userInstallerUrl} | iex`}
                   copied={copied === "winuser"}
                   onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${userInstallerUrl} | iex`, "winuser")}
+                />
+              </div>
+
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="mb-1 font-semibold text-slate-300">Going on-site? Build a USB installer</div>
+                <p className="mb-2 text-slate-500">
+                  Run once on your own PC to make a self-contained thumb-drive installer (works offline on-site — no
+                  download needed there). Then run <span className="text-slate-300">install.bat</span> from the USB at
+                  the customer.
+                </p>
+                <CopyBlock
+                  text={`irm ${usbBuilderUrl} | iex`}
+                  copied={copied === "usb"}
+                  onCopy={() => copy(`irm ${usbBuilderUrl} | iex`, "usb")}
                 />
               </div>
 
