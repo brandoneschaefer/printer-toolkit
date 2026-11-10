@@ -10,8 +10,9 @@
 // and dispatches scans in-process (single-node mode).
 
 import { env } from "../src/lib/env";
-import { SCAN_QUEUE, queueEnabled, getConnection } from "../src/lib/queue";
+import { SCAN_QUEUE, BULK_QUEUE, queueEnabled, getConnection } from "../src/lib/queue";
 import { runAuditJob } from "../src/lib/audit-core";
+import { runBulkCheckJob } from "../src/lib/bulkcheck";
 import { processDueSchedules } from "../src/lib/schedule-runner";
 
 function log(...a: unknown[]) {
@@ -36,6 +37,17 @@ async function main() {
     worker.on("failed", (job: any, err: Error) => log("job failed:", job?.id, err?.message));
     worker.on("completed", (job: any) => log("job completed:", job?.id));
     log("scan worker listening");
+
+    const bulkWorker = new Worker(
+      BULK_QUEUE,
+      async (job: { data: { bulkId: string } }) => {
+        log(`running bulk check ${job.data.bulkId}`);
+        await runBulkCheckJob(job.data.bulkId);
+      },
+      { connection: getConnection(), concurrency: 2 }
+    );
+    bulkWorker.on("failed", (job: any, err: Error) => log("bulk failed:", job?.id, err?.message));
+    log("bulk-check worker listening");
   }
 
   // 2. Scheduler tick.

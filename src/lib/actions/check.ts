@@ -1,11 +1,13 @@
 "use server";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { env } from "@/lib/env";
 import { externalCheck, SEVERITY_RANK, type ReconResult } from "@/lib/recon";
 import { requireTenant, getTenant } from "@/lib/tenant";
+import { enqueueBulkCheck } from "@/lib/queue";
 
 const schema = z.object({
   domain: z.string().min(3).max(253),
@@ -71,68 +73,53 @@ export async function externalCheckAction(_prev: CheckState, formData: FormData)
   return { ok: true, result };
 }
 
-export interface BulkRow {
-  domain: string;
-  exposed: boolean;
-  ips: number;
-  findings: number;
-  top?: string;
-}
-export interface BulkState {
-  ok?: boolean;
+export interface BulkCreateState {
   error?: string;
-  rows?: BulkRow[];
-  skipped?: number;
 }
 
-const MAX_BULK = 50;
+const DOMAIN_RE = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
+const MAX_BULK_DOMAINS = 5000;
 
-async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const workers = new Array(Math.min(limit, items.length || 1)).fill(0).map(async () => {
-    while (true) {
-      const i = next++;
-      if (i >= items.length) break;
-      results[i] = await fn(items[i]);
-    }
-  });
-  await Promise.all(workers);
-  return results;
+function parseDomains(text: string): string[] {
+  const tokens = text
+    .split(/[\s,;]+/)
+    .map((t) =>
+      t.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/:\d+$/, "")
+    )
+    .filter((t) => DOMAIN_RE.test(t));
+  return [...new Set(tokens)];
 }
 
-// Operator-only: bulk-check a list of domains from an uploaded CSV or pasted
-// text. Authenticated; passive; no email, no lead capture.
-export async function bulkCheckAction(_prev: BulkState, formData: FormData): Promise<BulkState> {
-  await requireTenant();
+// Operator-only: create a background bulk exposure check from an uploaded CSV
+// or pasted list. Authenticated; DNS + cert-transparency only (no Shodan).
+export async function createBulkCheckAction(_prev: BulkCreateState, formData: FormData): Promise<BulkCreateState> {
+  const { session, org } = await requireTenant();
 
   let text = "";
   const file = formData.get("file");
   if (file && typeof file !== "string" && file.size > 0) {
-    if (file.size > 1_000_000) return { error: "CSV too large (max 1 MB)." };
+    if (file.size > 5_000_000) return { error: "File too large (max 5 MB)." };
     text = await file.text();
   }
   text += "\n" + String(formData.get("domains") ?? "");
+  const name = String(formData.get("name") ?? "").trim() || null;
 
-  const tokens = text
-    .split(/[\s,;]+/)
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
-  const unique = [...new Set(tokens)];
-  if (unique.length === 0) return { error: "No domains found. Upload a CSV or paste a list." };
+  const domains = parseDomains(text).slice(0, MAX_BULK_DOMAINS);
+  if (domains.length === 0) return { error: "No valid domains found in the file or paste." };
 
-  const batch = unique.slice(0, MAX_BULK);
-  const skipped = unique.length - batch.length;
-
-  const results = await mapLimit(batch, 6, async (d): Promise<BulkRow | null> => {
-    const r = await externalCheck(d, env.shodanApiKey || undefined);
-    if (!r) return null; // invalid domain / header cell
-    r.findings.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
-    return { domain: r.domain, exposed: r.exposed, ips: r.ips.length, findings: r.findings.length, top: r.findings[0]?.title };
+  const bulk = await prisma.bulkCheck.create({
+    data: {
+      orgId: org.id,
+      createdById: session.userId,
+      name,
+      status: "QUEUED",
+      total: domains.length,
+      domains: { createMany: { data: domains.map((d) => ({ domain: d })) } },
+    },
   });
 
-  const rows = results.filter((x): x is BulkRow => x !== null).sort((a, b) => Number(b.exposed) - Number(a.exposed) || b.findings - a.findings);
-  return { ok: true, rows, skipped: skipped > 0 ? skipped : undefined };
+  await enqueueBulkCheck(bulk.id);
+  redirect(`/dashboard/check/bulk/${bulk.id}`);
 }
 
 // Operator-only: run a check by domain alone (no email, no lead capture, no

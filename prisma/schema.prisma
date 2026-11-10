@@ -55,6 +55,7 @@ model Organization {
   collectors     Collector[]
   schedules      Schedule[]
   authorizations Authorization[]
+  bulkChecks     BulkCheck[]
 }
 
 // A formal, customer-signed authorization to perform security testing.
@@ -285,6 +286,50 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+enum BulkCheckStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// A background bulk external-exposure check over many domains (DNS + cert
+// transparency only — no Shodan — so it is free and unbounded).
+model BulkCheck {
+  id           String          @id @default(cuid())
+  orgId        String
+  name         String?
+  status       BulkCheckStatus @default(QUEUED)
+  total        Int             @default(0)
+  processed    Int             @default(0)
+  exposedCount Int             @default(0)
+  error        String?
+  createdById  String?
+  createdAt    DateTime        @default(now())
+  completedAt  DateTime?
+
+  org     Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  domains BulkCheckDomain[]
+
+  @@index([orgId])
+}
+
+model BulkCheckDomain {
+  id         String  @id @default(cuid())
+  bulkId     String
+  domain     String
+  status     String  @default("pending") // pending | done | invalid
+  exposed    Boolean @default(false)
+  ips        Int     @default(0)
+  subdomains Int     @default(0)
+  findings   Int     @default(0)
+  top        String?
+
+  bulk BulkCheck @relation(fields: [bulkId], references: [id], onDelete: Cascade)
+
+  @@index([bulkId])
 }
 
 // A captured lead from the public External Exposure Check.
