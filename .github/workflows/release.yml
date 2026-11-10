@@ -1,0 +1,46 @@
+name: Release installers
+
+# Publishes all collector installers as a GitHub Release so they have stable,
+# versioned download links, e.g.
+#   https://github.com/<owner>/<repo>/releases/latest/download/install-collector.ps1
+#
+# Triggered by pushing a version tag (v1.0.0, v1.1.0, ...), or manually.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm ci
+      - name: Build collector bundle
+        run: npm run build:collector
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          name: PRET Collector ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          generate_release_notes: true
+          make_latest: true
+          files: |
+            installer/install-collector.ps1
+            installer/install-collector-user.ps1
+            installer/build-usb.ps1
+            installer/usb/install.bat
+            installer/usb/offline-install.ps1
+            installer/usb/README.txt
+            appliance/provision.sh
+            dist/collector.cjs
