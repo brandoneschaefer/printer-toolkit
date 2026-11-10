@@ -90,41 +90,6 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          {/* Hosts */}
-          <div>
-            <h2 className="mb-3 text-lg font-semibold text-white">Hosts</h2>
-            <div className="overflow-hidden rounded-xl border border-white/10">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5 text-left text-xs uppercase text-slate-400">
-                  <tr>
-                    <th className="px-4 py-3">Address</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Vendor</th>
-                    <th className="px-4 py-3">Open ports</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {audit.hosts.map((h) => (
-                    <tr key={h.id} className="border-t border-white/5">
-                      <td className="px-4 py-3 font-mono text-slate-200">{h.address}</td>
-                      <td className="px-4 py-3">
-                        {h.online ? (
-                          <span className="badge bg-emerald-500/20 text-emerald-300">Online</span>
-                        ) : (
-                          <span className="badge bg-slate-500/20 text-slate-400">No response</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{h.vendor ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono text-slate-400">
-                        {h.openPorts.length ? h.openPorts.join(", ") : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           {/* Findings */}
           <div>
             <h2 className="mb-3 text-lg font-semibold text-white">Findings &amp; recommendations</h2>
@@ -159,6 +124,41 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Hosts */}
+          <div>
+            <h2 className="mb-3 text-lg font-semibold text-white">Hosts</h2>
+            <div className="overflow-hidden rounded-xl border border-white/10">
+              <table className="w-full text-sm">
+                <thead className="bg-white/5 text-left text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3">Address</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Vendor</th>
+                    <th className="px-4 py-3">Open ports</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {audit.hosts.map((h) => (
+                    <tr key={h.id} className="border-t border-white/5">
+                      <td className="px-4 py-3 font-mono text-slate-200">{h.address}</td>
+                      <td className="px-4 py-3">
+                        {h.online ? (
+                          <span className="badge bg-emerald-500/20 text-emerald-300">Online</span>
+                        ) : (
+                          <span className="badge bg-slate-500/20 text-slate-400">No response</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">{h.vendor ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-slate-400">
+                        {h.openPorts.length ? h.openPorts.join(", ") : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}
