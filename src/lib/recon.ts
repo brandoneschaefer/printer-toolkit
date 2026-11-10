@@ -121,6 +121,70 @@ function sevForPort(port: number): Severity {
   return "LOW";
 }
 
+function portDetail(p: number): string {
+  if (p === 9100) return "Raw/JetDirect printing port reachable from the internet — accepts unauthenticated print and control commands.";
+  if (p === 631) return "IPP printing reachable from the internet.";
+  if (p === 515) return "Legacy LPD printing reachable from the internet.";
+  if (p === 161) return "SNMP reachable from the internet — often exposes device config via default community strings.";
+  if (p === 23) return "Telnet reachable from the internet — cleartext remote management.";
+  if (p === 21) return "FTP reachable from the internet — often cleartext / default credentials.";
+  if (p === 80) return "Web management interface reachable over unencrypted HTTP from the internet.";
+  return `Service on port ${p} reachable from the internet.`;
+}
+
+// Shodan InternetDB: free, keyless summary per IP (ports, CPEs, hostnames,
+// tags, CVEs). https://internetdb.shodan.io/<ip>
+interface InternetDbHost {
+  ports?: number[];
+  cpes?: string[];
+  hostnames?: string[];
+  tags?: string[];
+  vulns?: string[];
+}
+
+async function internetdbHost(ip: string): Promise<InternetDbHost | null> {
+  try {
+    const res = await withTimeout(
+      fetch(`https://internetdb.shodan.io/${ip}`, { headers: { "User-Agent": "PRET-ExposureCheck/1.0" } }),
+      6000,
+      null as any
+    );
+    if (!res || !res.ok) return null; // 404 = no data for this IP
+    return (await res.json()) as InternetDbHost;
+  } catch {
+    return null;
+  }
+}
+
+interface NormHost {
+  ports: number[];
+  vulns: string[];
+  banners: Record<number, string>;
+  hints: string[];
+}
+
+function normalizeShodan(h: ShodanHost | null): NormHost | null {
+  if (!h) return null;
+  const banners: Record<number, string> = {};
+  for (const d of h.data ?? []) {
+    if (d.port) {
+      const b = (d.product || d.http?.server || "").toString();
+      if (b) banners[d.port] = b;
+    }
+  }
+  return { ports: h.ports ?? [], vulns: h.vulns ?? [], banners, hints: Object.values(banners) };
+}
+
+function normalizeInternetDb(h: InternetDbHost | null): NormHost | null {
+  if (!h) return null;
+  return {
+    ports: h.ports ?? [],
+    vulns: h.vulns ?? [],
+    banners: {},
+    hints: [...(h.cpes ?? []), ...(h.tags ?? []), ...(h.hostnames ?? [])],
+  };
+}
+
 export async function externalCheck(rawDomain: string, shodanKey?: string): Promise<ReconResult | null> {
   const domain = normalizeDomain(rawDomain);
   if (!domain) return null;
@@ -140,46 +204,45 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
     });
   }
 
-  let shodanUsed = false;
-  if (shodanKey && ips.length) {
+  // Data source: full Shodan host API (richer) when a key is set, otherwise the
+  // free, keyless Shodan InternetDB. Both give open ports + CVEs per IP.
+  const sourceLabel = shodanKey ? "Shodan" : "Shodan InternetDB";
+  let scanUsed = false;
+
+  if (ips.length) {
     for (const ip of ips.slice(0, 5)) {
-      const host = await shodanHost(ip, shodanKey);
+      const host = shodanKey ? normalizeShodan(await shodanHost(ip, shodanKey)) : normalizeInternetDb(await internetdbHost(ip));
       if (!host) continue;
-      shodanUsed = true;
-      const ports = host.ports ?? [];
-      const printerPorts = ports.filter((p) => PRINTER_PORTS.includes(p));
-      for (const p of printerPorts) {
-        const svc = (host.data ?? []).find((d) => d.port === p);
-        const banner = (svc?.product || svc?.http?.server || "").toString();
-        const looksPrinter = PRINTER_HINTS.some((h) => banner.toLowerCase().includes(h)) || [9100, 515, 631].includes(p);
+      scanUsed = true;
+      const hints = host.hints.map((h) => h.toLowerCase());
+      for (const p of host.ports.filter((pp) => PRINTER_PORTS.includes(pp))) {
+        const banner = host.banners[p] || "";
+        const looksPrinter =
+          [9100, 515, 631].includes(p) ||
+          PRINTER_HINTS.some((h) => banner.toLowerCase().includes(h) || hints.some((x) => x.includes(h)));
         findings.push({
           severity: looksPrinter ? sevForPort(p) : "LOW",
           title: `${ip}:${p} exposed to the internet${banner ? ` (${banner})` : ""}`,
-          detail: p === 9100 ? "Raw/JetDirect printing port reachable from the internet — accepts unauthenticated print and control commands." :
-            p === 631 ? "IPP printing reachable from the internet." :
-            p === 161 ? "SNMP reachable from the internet — often exposes device config via default community strings." :
-            p === 23 ? "Telnet reachable from the internet — cleartext remote management." :
-            `Service on port ${p} reachable from the internet.`,
-          source: "Shodan",
+          detail: portDetail(p),
+          source: sourceLabel,
         });
       }
-      for (const v of host.vulns ?? []) {
+      for (const v of host.vulns) {
         findings.push({
           severity: "HIGH",
           title: `Known vulnerability indexed on ${ip}: ${v}`,
-          detail: "Shodan has flagged this host against a known CVE. Verify and patch.",
-          source: "Shodan",
+          detail: "This host is flagged against a known CVE in internet-scan data. Verify and patch.",
+          source: sourceLabel,
         });
       }
     }
-    if (!shodanUsed) notes.push("No hosts for this domain are indexed in Shodan's scan data (often a good sign).");
-  } else if (!shodanKey) {
-    notes.push("Live internet-scan lookup (Shodan) is not configured; results are limited to DNS and certificate transparency.");
+    if (!scanUsed) notes.push(`No hosts for this domain are indexed in ${sourceLabel} (often a good sign).`);
   }
+  if (!shodanKey) notes.push("Using Shodan InternetDB (free). Add a Shodan API key for richer per-service detail.");
 
-  const exposed = findings.some((f) => f.severity === "HIGH" || f.severity === "CRITICAL" || f.source === "Shodan");
+  const exposed = findings.some((f) => f.source === "Shodan" || f.source === "Shodan InternetDB");
 
-  return { domain, ips, subdomains: subs, printerSubdomains: printerSubs, findings, exposed, shodanUsed, notes };
+  return { domain, ips, subdomains: subs, printerSubdomains: printerSubs, findings, exposed, shodanUsed: scanUsed, notes };
 }
 
 export const SEVERITY_RANK: Record<Severity, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };

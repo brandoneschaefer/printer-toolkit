@@ -37,7 +37,7 @@ export default async function BulkDetailPage({ params }: { params: Promise<{ id:
           </div>
         </div>
         <p className="mt-1 text-sm text-slate-400">
-          Created {dateTime(bulk.createdAt)} · DNS + certificate-transparency scan (no Shodan)
+          Created {dateTime(bulk.createdAt)} · Free scan — Shodan InternetDB + DNS + certificate transparency
         </p>
       </div>
 
