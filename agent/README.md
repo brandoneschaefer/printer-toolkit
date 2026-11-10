@@ -35,6 +35,28 @@ Only outbound HTTPS from the agent is required — no inbound ports, no VPN.
 In the app: **Dashboard → Collectors → Register a collector**. Copy the token
 (shown once).
 
+## Install options
+
+| Method | Best for | How |
+|--------|----------|-----|
+| **Windows one-click** | Small offices with an always-on Windows PC | PowerShell one-liner (below) — installs a background service, no Docker |
+| **Docker** | Linux hosts, servers, NAS, appliances | `docker run` (below) |
+| **Node** | Development / custom | `npm run agent` (below) |
+
+### Windows one-click (no Docker)
+
+On an always-on Windows PC inside the target network, open **PowerShell as
+Administrator** and paste the command shown on the **Collectors** page:
+
+```powershell
+$env:COLLECTOR_TOKEN="<token>"; $env:SENTINEL_URL="https://your-app.onrender.com"; irm https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/install-collector.ps1 | iex
+```
+
+This downloads a small Node runtime + the collector bundle into
+`%ProgramData%\SentinelPrintCollector`, and registers an always-on background
+task (starts at boot, restarts on failure, runs as SYSTEM). Remove it with
+`installer/uninstall-collector.ps1`.
+
 ## Run it
 
 **Docker (recommended):**

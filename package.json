@@ -15,7 +15,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "scan:cli": "tsx scripts/scan-cli.ts",
     "agent": "tsx agent/collector.ts",
-    "worker": "tsx worker/index.ts"
+    "worker": "tsx worker/index.ts",
+    "build:collector": "esbuild agent/collector.ts --bundle --platform=node --target=node18 --outfile=dist/collector.cjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,6 +42,7 @@
     "@types/react": "19.0.2",
     "@types/react-dom": "19.0.2",
     "autoprefixer": "10.4.20",
+    "esbuild": "^0.24.2",
     "postcss": "8.4.49",
     "prisma": "6.1.0",
     "tailwindcss": "3.4.17",

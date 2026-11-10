@@ -6,9 +6,18 @@ import { createCollectorAction, type CollectorActionState } from "@/lib/actions/
 
 const initial: CollectorActionState = {};
 
-export function CollectorManager({ appUrl, image }: { appUrl: string; image: string }) {
+export function CollectorManager({
+  appUrl,
+  image,
+  installerUrl,
+}: {
+  appUrl: string;
+  image: string;
+  installerUrl: string;
+}) {
   const [state, formAction, pending] = useActionState(createCollectorAction, initial);
   const [copied, setCopied] = useState<string | null>(null);
+  const [tab, setTab] = useState<"windows" | "docker">("windows");
 
   const copy = (text: string, key: string) => {
     navigator.clipboard?.writeText(text).then(() => {
@@ -41,18 +50,59 @@ export function CollectorManager({ appUrl, image }: { appUrl: string; image: str
             Copy this token now — it is shown <strong>only once</strong> and cannot be retrieved later.
           </p>
           <TokenRow label="Collector token" value={state.token} copied={copied === "tok"} onCopy={() => copy(state.token!, "tok")} />
-          <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
-            <div className="mb-2 font-semibold text-slate-300">Run the collector on any always-on machine inside the target network (Docker):</div>
-            <pre className="overflow-x-auto whitespace-pre-wrap">{`docker run -d --name sentinel-collector --restart unless-stopped --network host \\
+
+          {/* Install method tabs */}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setTab("windows")} className={`btn text-xs ${tab === "windows" ? "bg-brand-500 text-white" : "border border-white/10 bg-white/5 text-slate-300"}`}>
+              Windows (one-click)
+            </button>
+            <button type="button" onClick={() => setTab("docker")} className={`btn text-xs ${tab === "docker" ? "bg-brand-500 text-white" : "border border-white/10 bg-white/5 text-slate-300"}`}>
+              Docker (Linux / server)
+            </button>
+          </div>
+
+          {tab === "windows" ? (
+            <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
+              <div className="mb-2 font-semibold text-slate-300">
+                On an always-on Windows PC in the target network, open <span className="text-white">PowerShell as Administrator</span> and paste:
+              </div>
+              <CopyBlock
+                text={`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`}
+                copied={copied === "win"}
+                onCopy={() => copy(`$env:COLLECTOR_TOKEN="${state.token}"; $env:SENTINEL_URL="${appUrl}"; irm ${installerUrl} | iex`, "win")}
+              />
+              <div className="mt-2 text-slate-500">
+                Installs a lightweight background service (no Docker). Auto-starts on boot, outbound HTTPS only.
+                It will show as “Online” here within a minute.
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
+              <div className="mb-2 font-semibold text-slate-300">On any Linux host / server in the target network:</div>
+              <CopyBlock
+                text={`docker run -d --name sentinel-collector --restart unless-stopped --network host \\
   -e SENTINEL_URL=${appUrl} \\
   -e COLLECTOR_TOKEN=${state.token} \\
-  ${image}`}</pre>
-            <div className="mt-2 text-slate-500">
-              Outbound HTTPS only — no inbound ports. It will appear as “Online” here within a minute.
+  ${image}`}
+                copied={copied === "dock"}
+                onCopy={() => copy(`docker run -d --name sentinel-collector --restart unless-stopped --network host -e SENTINEL_URL=${appUrl} -e COLLECTOR_TOKEN=${state.token} ${image}`, "dock")}
+              />
+              <div className="mt-2 text-slate-500">Outbound HTTPS only — no inbound ports.</div>
             </div>
-          </div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function CopyBlock({ text, copied, onCopy }: { text: string; copied: boolean; onCopy: () => void }) {
+  return (
+    <div className="flex items-start gap-2">
+      <pre className="flex-1 overflow-x-auto whitespace-pre-wrap rounded border border-white/10 bg-black/30 p-2">{text}</pre>
+      <button type="button" onClick={onCopy} className="btn-ghost shrink-0 text-xs">
+        {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+      </button>
     </div>
   );
 }

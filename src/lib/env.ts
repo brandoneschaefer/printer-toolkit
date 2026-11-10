@@ -40,8 +40,13 @@ export const env = {
     tcpTimeoutMs: int("SCANNER_TCP_TIMEOUT_MS", 2500),
   },
 
-  // Published collector image shown in the one-command install snippet.
+  // Published collector image shown in the one-command Docker install snippet.
   collectorImage: str("COLLECTOR_IMAGE", "ghcr.io/brandoneschaefer/sentinelprint-collector:latest"),
+  // Raw URL of the Windows one-click PowerShell installer.
+  collectorInstallerUrl: str(
+    "COLLECTOR_INSTALLER_URL",
+    "https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/install-collector.ps1"
+  ),
 
   // When set, cloud scans are dispatched to a BullMQ worker over Redis.
   // When empty, scans run in-process (fine for single-node / local dev).
