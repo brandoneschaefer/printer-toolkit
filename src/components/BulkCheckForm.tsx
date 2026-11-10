@@ -29,8 +29,8 @@ export function BulkCheckForm() {
         <Upload className="h-4 w-4" /> {pending ? "Starting…" : "Start bulk check"}
       </button>
       <p className="text-xs text-slate-500">
-        Runs in the background and is free — it uses Shodan InternetDB (keyless) plus DNS and certificate transparency.
-        You&apos;ll see results fill in live. Use the single-domain check above for a deeper Shodan lookup.
+        Runs in the background and is free — it uses internet-exposure data plus DNS and certificate transparency.
+        You&apos;ll see results fill in live. Use the single-domain check above for a deeper lookup.
       </p>
     </form>
   );

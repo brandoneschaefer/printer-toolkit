@@ -24,7 +24,7 @@ export default async function OperatorCheckPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-white">Single domain <span className="text-xs font-normal text-slate-500">(deep check, uses Shodan)</span></h2>
+        <h2 className="mb-3 text-lg font-semibold text-white">Single domain <span className="text-xs font-normal text-slate-500">(deep check)</span></h2>
         <DomainCheckForm />
       </div>
 

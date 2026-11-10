@@ -244,7 +244,8 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
 
   // Data source: full Shodan host API (richer) when a key is set, otherwise the
   // free, keyless Shodan InternetDB. Both give open ports + CVEs per IP.
-  const sourceLabel = shodanKey ? "Shodan" : "Shodan InternetDB";
+  // Shown generically on the page so vendor names aren't surfaced to prospects.
+  const sourceLabel = "Internet scan";
   let scanUsed = false;
 
   if (ips.length) {
@@ -290,11 +291,10 @@ export async function externalCheck(rawDomain: string, shodanKey?: string): Prom
         }
       }
     }
-    if (!scanUsed) notes.push(`No hosts for this domain are indexed in ${sourceLabel} (often a good sign).`);
+    if (!scanUsed) notes.push("No internet-facing services were found for this domain (often a good sign).");
   }
-  if (!shodanKey) notes.push("Using Shodan InternetDB (free). Add a Shodan API key for richer per-service detail.");
 
-  const exposed = findings.some((f) => f.source === "Shodan" || f.source === "Shodan InternetDB");
+  const exposed = findings.some((f) => f.source === sourceLabel);
 
   return { domain, ips, subdomains: subs, printerSubdomains: printerSubs, findings, exposed, shodanUsed: scanUsed, notes };
 }
