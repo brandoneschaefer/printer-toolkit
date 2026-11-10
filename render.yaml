@@ -29,8 +29,16 @@ services:
     runtime: node
     plan: starter
     buildCommand: npm install && npm run build
-    # Apply DB migrations, then start the server.
-    startCommand: npx prisma migrate deploy && npm run start
+    # Wait for the database to be reachable (new Postgres can take a few minutes
+    # to accept connections), run migrations, then start the server.
+    startCommand: |
+      bash -c '
+      for i in $(seq 1 24); do
+        npx prisma migrate deploy && exec npm run start
+        echo "database not ready, retry $i/24"; sleep 10
+      done
+      echo "database unreachable after retries"; exit 1
+      '
     healthCheckPath: /
     autoDeploy: true
     envVars:
