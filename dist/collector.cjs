@@ -8167,7 +8167,7 @@ function request(scheme, host, port, timeoutMs, auth) {
         // Printer web servers routinely use self-signed certs; we are
         // assessing exposure, not validating the chain here.
         rejectUnauthorized: false,
-        headers: { "User-Agent": "SentinelPrint-Audit/1.0", Accept: "text/html" }
+        headers: { "User-Agent": "PRET-Audit/1.0", Accept: "text/html" }
       },
       (res) => {
         let body = "";
