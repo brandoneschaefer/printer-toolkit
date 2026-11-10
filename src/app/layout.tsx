@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SentinelPrint — Printer Security Auditing",
+  title: "PRET — Printer Exploitation Toolkit",
   description:
     "Multi-tenant printer security auditing for corporate fleets. Non-destructive assessment of exposed printing protocols, SNMP, and management interfaces.",
 };

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireTenant } from "@/lib/tenant";
-import { createAudit, EntitlementError, ScopeError } from "@/lib/audit";
+import { createAudit, EntitlementError, ScopeError, AuthorizationError } from "@/lib/audit";
 import { enqueueScan } from "@/lib/queue";
 import { runAuditSchema } from "@/lib/validation";
 
@@ -42,6 +42,7 @@ export async function runAuditAction(_prev: ActionState, formData: FormData): Pr
   } catch (err) {
     if (err instanceof EntitlementError) return { error: err.message };
     if (err instanceof ScopeError) return { error: err.message };
+    if (err instanceof AuthorizationError) return { error: err.message };
     return { error: err instanceof Error ? err.message : "Failed to start audit" };
   }
 

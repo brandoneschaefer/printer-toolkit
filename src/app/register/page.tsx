@@ -14,7 +14,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-lg font-bold text-white">
-          <ShieldCheck className="h-6 w-6 text-brand-400" /> SentinelPrint
+          <ShieldCheck className="h-6 w-6 text-brand-400" /> PRET
         </Link>
         <div className="card">
           <h1 className="text-xl font-semibold text-white">Create your company account</h1>

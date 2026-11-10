@@ -39,3 +39,17 @@ body {
 .sev-MEDIUM { @apply bg-amber-500/20 text-amber-300; }
 .sev-HIGH { @apply bg-orange-500/20 text-orange-300; }
 .sev-CRITICAL { @apply bg-red-500/25 text-red-300; }
+
+/* Light severity tags for the printable report */
+.rsev-INFO { @apply bg-slate-100 text-slate-700 ring-1 ring-slate-300; }
+.rsev-LOW { @apply bg-sky-100 text-sky-800 ring-1 ring-sky-300; }
+.rsev-MEDIUM { @apply bg-amber-100 text-amber-800 ring-1 ring-amber-300; }
+.rsev-HIGH { @apply bg-orange-100 text-orange-800 ring-1 ring-orange-300; }
+.rsev-CRITICAL { @apply bg-red-100 text-red-800 ring-1 ring-red-300; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .print-page { box-shadow: none !important; margin: 0 !important; max-width: none !important; }
+  .avoid-break { break-inside: avoid; }
+}

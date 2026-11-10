@@ -13,7 +13,7 @@ export default async function LandingPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <div className="flex items-center gap-2 text-lg font-bold text-white">
           <ShieldCheck className="h-6 w-6 text-brand-400" />
-          SentinelPrint
+          PRET
         </div>
         <nav className="flex items-center gap-3">
           {session ? (
@@ -40,7 +40,7 @@ export default async function LandingPage() {
           Find the printers quietly exposing your corporate network
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-300">
-          SentinelPrint audits your authorized printer fleet for exposed printing protocols, default SNMP
+          PRET audits your authorized printer fleet for exposed printing protocols, default SNMP
           communities, unencrypted management interfaces, and default credentials — then hands you a prioritized
           remediation report. Read-only by design. Safe to run on live production devices.
         </p>
@@ -128,10 +128,10 @@ export default async function LandingPage() {
       <footer className="border-t border-white/10 py-8">
         <div className="mx-auto max-w-6xl px-6 text-center text-sm text-slate-500">
           <p>
-            SentinelPrint performs <strong className="text-slate-400">authorized, non-destructive</strong> security
+            PRET performs <strong className="text-slate-400">authorized, non-destructive</strong> security
             assessment only. You must own or have explicit written authorization to test every host in your scope.
           </p>
-          <p className="mt-2">© {new Date().getFullYear()} SentinelPrint</p>
+          <p className="mt-2">© {new Date().getFullYear()} PRET</p>
         </div>
       </footer>
     </div>

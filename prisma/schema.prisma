@@ -51,9 +51,30 @@ model Organization {
   memberships Membership[]
   targets     Target[]
   audits      Audit[]
-  payments    Payment[]
-  collectors  Collector[]
-  schedules   Schedule[]
+  payments       Payment[]
+  collectors     Collector[]
+  schedules      Schedule[]
+  authorizations Authorization[]
+}
+
+// A formal, customer-signed authorization to perform security testing.
+// At least one active authorization is required before any audit can run.
+model Authorization {
+  id          String   @id @default(cuid())
+  orgId       String
+  signerName  String
+  signerTitle String?
+  signerEmail String
+  scope       String // free-text description of the networks/assets authorized
+  statement   String // the exact attestation text that was accepted
+  active      Boolean  @default(true)
+  signedAt    DateTime @default(now())
+  revokedAt   DateTime?
+  createdById String?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model Membership {

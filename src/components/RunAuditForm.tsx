@@ -43,7 +43,7 @@ export function RunAuditForm({
           <label className={`cursor-pointer rounded-lg border p-3 text-sm ${executor === "CLOUD" ? "border-brand-400 bg-brand-500/10" : "border-white/10 bg-ink-900"}`}>
             <input type="radio" name="executor" value="CLOUD" className="sr-only" checked={executor === "CLOUD"} onChange={() => setExecutor("CLOUD")} />
             <div className="font-medium text-white">Cloud scan</div>
-            <div className="mt-1 text-xs text-slate-400">For internet-reachable targets. Runs immediately on SentinelPrint.</div>
+            <div className="mt-1 text-xs text-slate-400">For internet-reachable targets. Runs immediately on PRET.</div>
           </label>
           <label className={`cursor-pointer rounded-lg border p-3 text-sm ${executor === "COLLECTOR" ? "border-brand-400 bg-brand-500/10" : "border-white/10 bg-ink-900"} ${collectors.length === 0 ? "opacity-50" : ""}`}>
             <input type="radio" name="executor" value="COLLECTOR" className="sr-only" checked={executor === "COLLECTOR"} onChange={() => setExecutor("COLLECTOR")} disabled={collectors.length === 0} />

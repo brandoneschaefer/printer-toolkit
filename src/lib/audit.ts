@@ -13,6 +13,7 @@ export { persistResults, markAuditFailed, runAuditJob } from "./audit-core";
 
 export class EntitlementError extends Error {}
 export class ScopeError extends Error {}
+export class AuthorizationError extends Error {}
 
 interface CreateAuditInput {
   orgId: string;
@@ -32,6 +33,16 @@ interface CreateAuditInput {
 export async function createAudit(input: CreateAuditInput): Promise<string> {
   const org = await prisma.organization.findUnique({ where: { id: input.orgId } });
   if (!org) throw new Error("Organization not found");
+
+  // A signed authorization must be on file before any scan runs.
+  const authorization = await prisma.authorization.findFirst({
+    where: { orgId: input.orgId, active: true },
+  });
+  if (!authorization) {
+    throw new AuthorizationError(
+      "A signed authorization is required before running any audit. Complete the Authorization step first."
+    );
+  }
 
   // Resolve authorized targets belonging to this tenant.
   const targets = await prisma.target.findMany({

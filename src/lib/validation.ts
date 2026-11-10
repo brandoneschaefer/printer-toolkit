@@ -19,6 +19,14 @@ export const targetSchema = z.object({
   notes: z.string().max(500).optional().or(z.literal("")),
 });
 
+export const authorizationSchema = z.object({
+  signerName: z.string().min(2, "Full name is required").max(120),
+  signerTitle: z.string().max(120).optional().or(z.literal("")),
+  signerEmail: z.string().email("Enter a valid email"),
+  scope: z.string().min(3, "Describe the networks/assets you are authorizing").max(1000),
+  accept: z.literal(true, { errorMap: () => ({ message: "You must accept the authorization statement" }) }),
+});
+
 export const scheduleSchema = z.object({
   name: z.string().min(1, "Schedule name is required").max(120),
   targetIds: z.array(z.string()).min(1, "Select at least one target"),

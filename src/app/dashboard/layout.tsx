@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature } from "lucide-react";
 import { getTenant, hasActiveSubscription } from "@/lib/tenant";
 import { logoutAction } from "@/lib/actions/auth";
 
@@ -15,11 +15,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-ink-800/60 p-5 md:flex">
         <Link href="/dashboard" className="flex items-center gap-2 text-lg font-bold text-white">
-          <ShieldCheck className="h-6 w-6 text-brand-400" /> SentinelPrint
+          <ShieldCheck className="h-6 w-6 text-brand-400" /> PRET
         </Link>
 
         <nav className="mt-8 space-y-1">
           <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>Overview</NavLink>
+          <NavLink href="/dashboard/authorization" icon={<FileSignature className="h-4 w-4" />}>Authorization</NavLink>
           <NavLink href="/dashboard/targets" icon={<Crosshair className="h-4 w-4" />}>Targets &amp; scope</NavLink>
           <NavLink href="/dashboard/collectors" icon={<Server className="h-4 w-4" />}>Collectors</NavLink>
           <NavLink href="/dashboard/audits" icon={<FileSearch className="h-4 w-4" />}>Audits</NavLink>
@@ -55,7 +56,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile top bar */}
         <div className="flex items-center justify-between border-b border-white/10 p-4 md:hidden">
           <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white">
-            <ShieldCheck className="h-5 w-5 text-brand-400" /> SentinelPrint
+            <ShieldCheck className="h-5 w-5 text-brand-400" /> PRET
           </Link>
           <form action={logoutAction}>
             <button className="btn-ghost text-sm" type="submit"><LogOut className="h-4 w-4" /></button>

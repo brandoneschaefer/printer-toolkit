@@ -23,7 +23,7 @@ export default async function CollectorsPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Collectors</h1>
         <p className="text-sm text-slate-400">
-          On-prem scan agents that let SentinelPrint reach printers inside private networks without exposing them.
+          On-prem scan agents that let PRET reach printers inside private networks without exposing them.
         </p>
       </div>
 

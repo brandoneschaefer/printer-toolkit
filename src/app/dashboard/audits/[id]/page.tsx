@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireTenant } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
+import { FileDown } from "lucide-react";
 import { SeverityBadge, StatusPill, RiskMeter } from "@/components/SeverityBadge";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { HostTable } from "@/components/HostTable";
 import { dateTime, relativeDuration } from "@/lib/format";
-
-const SEV_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] as const;
+import { groupFindingsByHost, SEV_ORDER } from "@/lib/report";
 
 export default async function AuditDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,9 +28,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
   const counts: Record<string, number> =
     summary?.severity ?? { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 };
 
-  const sortedFindings = [...audit.findings].sort(
-    (a, b) => SEV_ORDER.indexOf(a.severity as any) - SEV_ORDER.indexOf(b.severity as any)
-  );
+  const findingGroups = groupFindingsByHost(audit.findings);
 
   return (
     <div className="space-y-6">
@@ -40,6 +39,11 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
           <div className="flex items-center gap-3">
             <StatusPill status={audit.status} />
             {inFlight && <AutoRefresh />}
+            {audit.status === "COMPLETED" && (
+              <Link href={`/report/${audit.id}`} target="_blank" className="btn-ghost text-sm">
+                <FileDown className="h-4 w-4" /> Export PDF
+              </Link>
+            )}
           </div>
         </div>
         <p className="mt-1 text-sm text-slate-400">
@@ -90,35 +94,47 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          {/* Findings */}
+          {/* Findings grouped by host */}
           <div>
             <h2 className="mb-3 text-lg font-semibold text-white">Findings &amp; recommendations</h2>
-            {sortedFindings.length === 0 ? (
+            {findingGroups.length === 0 ? (
               <div className="card text-sm text-emerald-300">
                 No exposures detected across the scanned scope. 🎉
               </div>
             ) : (
-              <div className="space-y-3">
-                {sortedFindings.map((f) => (
-                  <div key={f.id} className="card">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <SeverityBadge severity={f.severity} />
-                        <span className="font-semibold text-white">{f.title}</span>
-                      </div>
-                      <span className="font-mono text-xs text-slate-400">
-                        {f.host}{f.port ? `:${f.port}` : ""} {f.protocol ? `(${f.protocol})` : ""}
+              <div className="space-y-6">
+                {findingGroups.map((group) => (
+                  <div key={group.host}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-slate-200">{group.host}</span>
+                      <span className="text-xs text-slate-500">
+                        {group.findings.length} finding{group.findings.length === 1 ? "" : "s"}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm text-slate-300">{f.description}</p>
-                    {f.evidence && (
-                      <pre className="mt-3 overflow-x-auto rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
-                        {f.evidence}
-                      </pre>
-                    )}
-                    <div className="mt-3 rounded-lg border border-brand-400/20 bg-brand-500/5 p-3">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-brand-300">Recommendation</span>
-                      <p className="mt-1 text-sm text-slate-200">{f.recommendation}</p>
+                    <div className="space-y-3">
+                      {group.findings.map((f) => (
+                        <div key={f.id} className="card">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              <SeverityBadge severity={f.severity} />
+                              <span className="font-semibold text-white">{f.title}</span>
+                            </div>
+                            <span className="font-mono text-xs text-slate-400">
+                              {f.port ? `:${f.port}` : ""} {f.protocol ? `(${f.protocol})` : ""}
+                            </span>
+                          </div>
+                          <p className="mt-3 text-sm text-slate-300">{f.description}</p>
+                          {f.evidence && (
+                            <pre className="mt-3 overflow-x-auto rounded-lg border border-white/10 bg-ink-900 p-3 text-xs text-slate-400">
+                              {f.evidence}
+                            </pre>
+                          )}
+                          <div className="mt-3 rounded-lg border border-brand-400/20 bg-brand-500/5 p-3">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-brand-300">Recommendation</span>
+                            <p className="mt-1 text-sm text-slate-200">{f.recommendation}</p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -129,36 +145,7 @@ export default async function AuditDetailPage({ params }: { params: Promise<{ id
           {/* Hosts */}
           <div>
             <h2 className="mb-3 text-lg font-semibold text-white">Hosts</h2>
-            <div className="overflow-hidden rounded-xl border border-white/10">
-              <table className="w-full text-sm">
-                <thead className="bg-white/5 text-left text-xs uppercase text-slate-400">
-                  <tr>
-                    <th className="px-4 py-3">Address</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Vendor</th>
-                    <th className="px-4 py-3">Open ports</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {audit.hosts.map((h) => (
-                    <tr key={h.id} className="border-t border-white/5">
-                      <td className="px-4 py-3 font-mono text-slate-200">{h.address}</td>
-                      <td className="px-4 py-3">
-                        {h.online ? (
-                          <span className="badge bg-emerald-500/20 text-emerald-300">Online</span>
-                        ) : (
-                          <span className="badge bg-slate-500/20 text-slate-400">No response</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{h.vendor ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono text-slate-400">
-                        {h.openPorts.length ? h.openPorts.join(", ") : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <HostTable hosts={audit.hosts} />
           </div>
         </>
       )}
