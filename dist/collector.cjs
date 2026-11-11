@@ -8167,7 +8167,7 @@ function request(scheme, host, port, timeoutMs, auth) {
         // Printer web servers routinely use self-signed certs; we are
         // assessing exposure, not validating the chain here.
         rejectUnauthorized: false,
-        headers: { "User-Agent": "PRET-Audit/1.0", Accept: "text/html" }
+        headers: { "User-Agent": "PrinterToolkit-Audit/1.0", Accept: "text/html" }
       },
       (res) => {
         let body = "";
@@ -8573,7 +8573,7 @@ async function heartbeat() {
   });
 }
 async function main() {
-  log(`SentinelPrint collector starting \u2014 control plane ${BASE}`);
+  log(`Printer Toolkit collector starting \u2014 control plane ${BASE}`);
   await heartbeat();
   while (true) {
     try {
