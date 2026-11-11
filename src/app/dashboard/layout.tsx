@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature, Magnet, Globe } from "lucide-react";
 import { getTenant, hasActiveSubscription } from "@/lib/tenant";
 import { logoutAction } from "@/lib/actions/auth";
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getTenant();
@@ -37,13 +38,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <div className="mt-2 flex items-center justify-between">
               <span className="text-slate-500">Plan</span>
               <span className={subActive ? "text-emerald-400" : "text-slate-400"}>
-                {subActive ? "Subscription" : "Pay-per-audit"}
+                {subActive ? "Subscription" : SHOW_ONE_TIME_AUDIT ? "Pay-per-audit" : "No plan"}
               </span>
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <span className="text-slate-500">Credits</span>
-              <span className="text-slate-300">{subActive ? "∞" : org.auditCredits}</span>
-            </div>
+            {SHOW_ONE_TIME_AUDIT && (
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-slate-500">Credits</span>
+                <span className="text-slate-300">{subActive ? "∞" : org.auditCredits}</span>
+              </div>
+            )}
           </div>
           <form action={logoutAction}>
             <button className="btn-ghost w-full justify-start text-sm" type="submit">

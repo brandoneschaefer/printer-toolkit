@@ -3,10 +3,7 @@ import { ShieldCheck, Network, Lock, FileSearch, Repeat, Building2 } from "lucid
 import { PRICING } from "@/lib/env";
 import { money } from "@/lib/format";
 import { getSession } from "@/lib/auth";
-
-// Launch toggle: hide the one-time "On-demand audit" tier until ~30 days
-// post-launch. Flip to `true` to restore it — the card markup is kept below.
-const SHOW_ONE_TIME_AUDIT = false;
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 export default async function LandingPage() {
   const session = await getSession();
