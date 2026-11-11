@@ -30,7 +30,7 @@ export default async function LandingPage() {
                 Sign in
               </Link>
               <Link href="/register" className="btn-primary">
-                Start an audit
+                Start monitoring
               </Link>
             </>
           )}
