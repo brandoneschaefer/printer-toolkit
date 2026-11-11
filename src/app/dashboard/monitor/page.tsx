@@ -3,7 +3,7 @@ import { requireTenant, hasActiveSubscription } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { dateTime } from "@/lib/format";
 import { TrackUrlForm } from "@/components/TrackUrlForm";
-import { untrackUrlAction } from "@/lib/actions/monitor";
+import { untrackUrlAction, scanUrlNowAction } from "@/lib/actions/monitor";
 
 export default async function MonitorPage() {
   const { org } = await requireTenant();
@@ -36,9 +36,15 @@ export default async function MonitorPage() {
       <TrackUrlForm />
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold text-white">
+        <h2 className="text-lg font-semibold text-white">
           Monitoring {targets.length > 0 && <span className="text-slate-500">({targets.length})</span>}
         </h2>
+        {targets.length > 0 && subActive && (
+          <p className="mb-3 mt-1 text-xs text-slate-500">
+            &ldquo;Scan now&rdquo; runs a one-off check in the background; results appear under Alerts.
+          </p>
+        )}
+        {targets.length > 0 && !subActive && <div className="mb-3" />}
         {targets.length === 0 ? (
           <div className="card text-sm text-slate-400">No URLs yet. Add one above to start monitoring.</div>
         ) : (
@@ -64,11 +70,21 @@ export default async function MonitorPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-400">{dateTime(t.createdAt)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <form action={untrackUrlAction}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <button type="submit" className="text-xs text-slate-400 hover:text-red-300">Remove</button>
-                      </form>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-4">
+                        {subActive && (
+                          <form action={scanUrlNowAction}>
+                            <input type="hidden" name="id" value={t.id} />
+                            <button type="submit" className="text-xs font-medium text-brand-300 hover:text-brand-200">
+                              Scan now
+                            </button>
+                          </form>
+                        )}
+                        <form action={untrackUrlAction}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <button type="submit" className="text-xs text-slate-400 hover:text-red-300">Remove</button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}
