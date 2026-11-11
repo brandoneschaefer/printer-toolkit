@@ -4,6 +4,7 @@ import { requireTenant, hasActiveSubscription } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { StatusPill } from "@/components/SeverityBadge";
 import { dateTime } from "@/lib/format";
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 export default async function OverviewPage() {
   const { org } = await requireTenant();
@@ -52,9 +53,13 @@ export default async function OverviewPage() {
 
       {!canRun && (
         <div className="card border-amber-400/30 bg-amber-500/5">
-          <h3 className="font-semibold text-amber-300">No audit credits</h3>
+          <h3 className="font-semibold text-amber-300">
+            {SHOW_ONE_TIME_AUDIT ? "No audit credits" : "No active subscription"}
+          </h3>
           <p className="mt-1 text-sm text-slate-300">
-            Purchase a one-time audit or start a monitoring subscription to run assessments.
+            {SHOW_ONE_TIME_AUDIT
+              ? "Purchase a one-time audit or start a monitoring subscription to run assessments."
+              : "Start a monitoring subscription to run assessments."}
           </p>
           <Link href="/dashboard/billing" className="btn-primary mt-4">Go to billing</Link>
         </div>

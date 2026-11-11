@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { env, PRICING } from "@/lib/env";
 import { money, dateTime } from "@/lib/format";
 import { checkoutAction, billingPortalAction } from "@/lib/actions/billing";
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 export default async function BillingPage({
   searchParams,
@@ -23,7 +24,11 @@ export default async function BillingPage({
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">Billing</h1>
-        <p className="text-sm text-slate-400">Purchase on-demand audits or manage your monitoring subscription.</p>
+        <p className="text-sm text-slate-400">
+          {SHOW_ONE_TIME_AUDIT
+            ? "Purchase on-demand audits or manage your monitoring subscription."
+            : "Manage your monitoring subscription."}
+        </p>
       </div>
 
       {env.billing.mockMode && (
@@ -37,44 +42,52 @@ export default async function BillingPage({
       {sp.canceled && <Banner>Checkout canceled.</Banner>}
 
       {/* Current status */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={`grid gap-4 ${SHOW_ONE_TIME_AUDIT ? "sm:grid-cols-2" : ""}`}>
         <div className="card">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Current plan</h3>
           <div className="mt-2 text-2xl font-bold text-white">
-            {subActive ? "Continuous monitoring" : "Pay-per-audit"}
+            {subActive ? "Continuous monitoring" : SHOW_ONE_TIME_AUDIT ? "Pay-per-audit" : "No active plan"}
           </div>
           {subActive ? (
             <p className="mt-1 text-sm text-slate-400">
               Renews {dateTime(org.currentPeriodEnd)} · status {org.subscriptionStatus.toLowerCase()}
             </p>
           ) : (
-            <p className="mt-1 text-sm text-slate-400">{org.auditCredits} audit credit(s) available</p>
+            <p className="mt-1 text-sm text-slate-400">
+              {SHOW_ONE_TIME_AUDIT
+                ? `${org.auditCredits} audit credit(s) available`
+                : "Start a monitoring subscription to run assessments."}
+            </p>
           )}
           <form action={billingPortalAction} className="mt-4">
             <button className="btn-ghost text-sm" type="submit">Manage billing</button>
           </form>
         </div>
 
-        <div className="card">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Audit credits</h3>
-          <div className="mt-2 text-2xl font-bold text-white">{subActive ? "Unlimited" : org.auditCredits}</div>
-          <p className="mt-1 text-sm text-slate-400">Each on-demand audit consumes one credit.</p>
-        </div>
+        {SHOW_ONE_TIME_AUDIT && (
+          <div className="card">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Audit credits</h3>
+            <div className="mt-2 text-2xl font-bold text-white">{subActive ? "Unlimited" : org.auditCredits}</div>
+            <p className="mt-1 text-sm text-slate-400">Each on-demand audit consumes one credit.</p>
+          </div>
+        )}
       </div>
 
       {/* Purchase options */}
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="card flex flex-col">
-          <h3 className="text-lg font-semibold text-white">On-demand audit</h3>
-          <div className="mt-2 text-3xl font-bold text-white">
-            {money(PRICING.oneTimeAuditCents)}<span className="text-base font-normal text-slate-400"> / audit</span>
+      <div className={`grid gap-6 ${SHOW_ONE_TIME_AUDIT ? "sm:grid-cols-2" : "max-w-md"}`}>
+        {SHOW_ONE_TIME_AUDIT && (
+          <div className="card flex flex-col">
+            <h3 className="text-lg font-semibold text-white">On-demand audit</h3>
+            <div className="mt-2 text-3xl font-bold text-white">
+              {money(PRICING.oneTimeAuditCents)}<span className="text-base font-normal text-slate-400"> / audit</span>
+            </div>
+            <p className="mt-2 text-sm text-slate-400">One full assessment of your authorized scope. Grants 1 credit.</p>
+            <form action={checkoutAction} className="mt-auto pt-5">
+              <input type="hidden" name="plan" value="one_time" />
+              <button className="btn-ghost w-full" type="submit">Buy one audit</button>
+            </form>
           </div>
-          <p className="mt-2 text-sm text-slate-400">One full assessment of your authorized scope. Grants 1 credit.</p>
-          <form action={checkoutAction} className="mt-auto pt-5">
-            <input type="hidden" name="plan" value="one_time" />
-            <button className="btn-ghost w-full" type="submit">Buy one audit</button>
-          </form>
-        </div>
+        )}
 
         <div className="card flex flex-col border-brand-400/40 ring-1 ring-brand-400/30">
           <h3 className="text-lg font-semibold text-white">Continuous monitoring</h3>

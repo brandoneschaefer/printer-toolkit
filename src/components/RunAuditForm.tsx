@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { runAuditAction, type ActionState } from "@/lib/actions/audits";
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 const initial: ActionState = {};
 
@@ -95,7 +96,11 @@ export function RunAuditForm({
         <button type="submit" className="btn-primary" disabled={pending || !canRun || targets.length === 0}>
           {pending ? "Starting audit…" : "Run audit"}
         </button>
-        {!canRun && <span className="text-sm text-amber-300">No credits — visit Billing.</span>}
+        {!canRun && (
+          <span className="text-sm text-amber-300">
+            {SHOW_ONE_TIME_AUDIT ? "No credits — visit Billing." : "Subscription required — visit Billing."}
+          </span>
+        )}
       </div>
     </form>
   );

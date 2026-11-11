@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireTenant, hasActiveSubscription } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { RunAuditForm } from "@/components/RunAuditForm";
+import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
 
 export default async function NewAuditPage() {
   const { org } = await requireTenant();
@@ -34,7 +35,9 @@ export default async function NewAuditPage() {
         <p className="text-sm text-slate-400">
           {subActive
             ? "Covered by your active subscription — unlimited audits."
-            : `This will consume 1 audit credit. You have ${org.auditCredits}.`}
+            : SHOW_ONE_TIME_AUDIT
+              ? `This will consume 1 audit credit. You have ${org.auditCredits}.`
+              : "An active monitoring subscription is required to run audits."}
         </p>
       </div>
 
