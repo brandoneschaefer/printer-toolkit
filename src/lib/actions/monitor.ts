@@ -167,7 +167,7 @@ function confirmationHtml(host: string, subActive: boolean): string {
   const statusLine = subActive
     ? `Your first scan is running now — results will appear under <strong>Alerts</strong> within a few minutes.`
     : `Start your subscription to activate weekly monitoring for this URL.`;
-  const cta = `${env.appUrl}/dashboard/monitor`;
+  const cta = `${env.appUrl}/dashboard/alerts`;
   return `
     <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;max-width:600px;">
       <h2 style="margin:0 0 6px;">You're all set ✅</h2>
@@ -179,7 +179,7 @@ function confirmationHtml(host: string, subActive: boolean): string {
       <p style="margin:0 0 20px;">${statusLine}</p>
       <p style="margin:0 0 24px;">
         <a href="${cta}" style="background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">
-          View your dashboard
+          View your alerts
         </a>
       </p>
       <p style="color:#94a3b8;font-size:12px;">Printer Toolkit · continuous printer fleet security monitoring.</p>
