@@ -4,9 +4,11 @@ import { requireTenant, hasActiveSubscription } from "@/lib/tenant";
 import { prisma } from "@/lib/db";
 import { StatusPill } from "@/components/SeverityBadge";
 import { dateTime } from "@/lib/format";
-import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
+import { redirect } from "next/navigation";
+import { SHOW_ONE_TIME_AUDIT, SIMPLE_MONITORING_MODE } from "@/lib/features";
 
 export default async function OverviewPage() {
+  if (SIMPLE_MONITORING_MODE) redirect("/dashboard/monitor");
   const { org } = await requireTenant();
   const subActive = hasActiveSubscription(org);
 

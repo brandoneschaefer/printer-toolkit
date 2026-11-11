@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature, Magnet, Globe } from "lucide-react";
+import { ShieldCheck, LayoutDashboard, Crosshair, FileSearch, CreditCard, LogOut, Server, CalendarClock, FileSignature, Magnet, Globe, Bell } from "lucide-react";
 import { getTenant, hasActiveSubscription } from "@/lib/tenant";
 import { logoutAction } from "@/lib/actions/auth";
-import { SHOW_ONE_TIME_AUDIT } from "@/lib/features";
+import { SHOW_ONE_TIME_AUDIT, SIMPLE_MONITORING_MODE } from "@/lib/features";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getTenant();
@@ -20,15 +20,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </Link>
 
         <nav className="mt-8 space-y-1">
-          <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>Overview</NavLink>
-          <NavLink href="/dashboard/authorization" icon={<FileSignature className="h-4 w-4" />}>Authorization</NavLink>
-          <NavLink href="/dashboard/targets" icon={<Crosshair className="h-4 w-4" />}>Targets &amp; scope</NavLink>
-          <NavLink href="/dashboard/collectors" icon={<Server className="h-4 w-4" />}>Collectors</NavLink>
-          <NavLink href="/dashboard/audits" icon={<FileSearch className="h-4 w-4" />}>Audits</NavLink>
-          <NavLink href="/dashboard/schedules" icon={<CalendarClock className="h-4 w-4" />}>Schedules</NavLink>
-          <NavLink href="/dashboard/check" icon={<Globe className="h-4 w-4" />}>Exposure check</NavLink>
-          <NavLink href="/dashboard/leads" icon={<Magnet className="h-4 w-4" />}>Leads</NavLink>
-          <NavLink href="/dashboard/billing" icon={<CreditCard className="h-4 w-4" />}>Billing</NavLink>
+          {SIMPLE_MONITORING_MODE ? (
+            <>
+              <NavLink href="/dashboard/monitor" icon={<Globe className="h-4 w-4" />}>Tracked URLs</NavLink>
+              <NavLink href="/dashboard/alerts" icon={<Bell className="h-4 w-4" />}>Alerts</NavLink>
+              <NavLink href="/dashboard/billing" icon={<CreditCard className="h-4 w-4" />}>Billing</NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink href="/dashboard" icon={<LayoutDashboard className="h-4 w-4" />}>Overview</NavLink>
+              <NavLink href="/dashboard/authorization" icon={<FileSignature className="h-4 w-4" />}>Authorization</NavLink>
+              <NavLink href="/dashboard/targets" icon={<Crosshair className="h-4 w-4" />}>Targets &amp; scope</NavLink>
+              <NavLink href="/dashboard/collectors" icon={<Server className="h-4 w-4" />}>Collectors</NavLink>
+              <NavLink href="/dashboard/audits" icon={<FileSearch className="h-4 w-4" />}>Audits</NavLink>
+              <NavLink href="/dashboard/schedules" icon={<CalendarClock className="h-4 w-4" />}>Schedules</NavLink>
+              <NavLink href="/dashboard/check" icon={<Globe className="h-4 w-4" />}>Exposure check</NavLink>
+              <NavLink href="/dashboard/leads" icon={<Magnet className="h-4 w-4" />}>Leads</NavLink>
+              <NavLink href="/dashboard/billing" icon={<CreditCard className="h-4 w-4" />}>Billing</NavLink>
+            </>
+          )}
         </nav>
 
         <div className="mt-auto space-y-3 pt-6">

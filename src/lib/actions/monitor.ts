@@ -1,0 +1,101 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db";
+import { requireTenant } from "@/lib/tenant";
+import { expandScope } from "@/lib/scanner/targets";
+import { computeNextRun } from "@/lib/audit-core";
+import { env } from "@/lib/env";
+
+export interface TrackActionState {
+  ok?: boolean;
+  error?: string;
+  host?: string;
+}
+
+/** Reduce any URL / domain / IP the user types to a bare hostname. */
+function normalizeUrlToHost(input: string): string | null {
+  let s = input.trim();
+  if (!s) return null;
+  if (!/^[a-z]+:\/\//i.test(s)) s = "https://" + s; // add scheme so URL() parses
+  try {
+    const host = new URL(s).hostname.toLowerCase();
+    return host || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Track a URL: normalize to a host, record the authorization attestation on the
+ * target, and create a WEEKLY cloud monitoring schedule for it. One target +
+ * one schedule per tracked URL, so removing the URL removes its monitoring.
+ */
+export async function trackUrlAction(_prev: TrackActionState, formData: FormData): Promise<TrackActionState> {
+  const { session, org } = await requireTenant();
+
+  const attested = formData.get("authorized") === "on" || formData.get("authorized") === "true";
+  if (!attested) return { error: "Please confirm you are authorized to monitor this URL." };
+
+  const host = normalizeUrlToHost(String(formData.get("url") ?? ""));
+  if (!host) return { error: "Enter a valid URL or domain, e.g. example.com." };
+
+  const { hosts, errors } = expandScope([host], env.scanner.maxHosts);
+  if (hosts.length === 0) return { error: errors[0] ?? `Could not parse a host from "${host}".` };
+
+  const existing = await prisma.target.findFirst({ where: { orgId: org.id, value: host } });
+  if (existing) return { error: `You're already tracking ${host}.` };
+
+  await prisma.$transaction(async (tx) => {
+    const target = await tx.target.create({
+      data: {
+        orgId: org.id,
+        createdById: session.userId,
+        label: host,
+        value: host,
+        authorized: true, // the attestation checkbox is the authorization
+      },
+    });
+    await tx.schedule.create({
+      data: {
+        orgId: org.id,
+        createdById: session.userId,
+        name: `Monitor ${host}`,
+        targetIds: [target.id],
+        cadence: "WEEKLY",
+        activeProbes: true,
+        executor: "CLOUD",
+        enabled: true,
+        nextRunAt: computeNextRun("WEEKLY"),
+      },
+    });
+  });
+
+  revalidatePath("/dashboard/monitor");
+  return { ok: true, host };
+}
+
+/** Stop tracking a URL: delete its target and the schedule(s) that watch it. */
+export async function untrackUrlAction(formData: FormData): Promise<void> {
+  const { org } = await requireTenant();
+  const id = String(formData.get("id"));
+  const target = await prisma.target.findFirst({ where: { id, orgId: org.id } });
+  if (!target) return;
+
+  await prisma.$transaction(async (tx) => {
+    const schedules = await tx.schedule.findMany({
+      where: { orgId: org.id, targetIds: { has: target.id } },
+    });
+    for (const s of schedules) {
+      const remaining = s.targetIds.filter((t) => t !== target.id);
+      if (remaining.length === 0) {
+        await tx.schedule.delete({ where: { id: s.id } });
+      } else {
+        await tx.schedule.update({ where: { id: s.id }, data: { targetIds: remaining } });
+      }
+    }
+    await tx.target.delete({ where: { id: target.id } });
+  });
+
+  revalidatePath("/dashboard/monitor");
+}
