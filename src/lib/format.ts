@@ -14,6 +14,10 @@ export function dateTime(d: Date | string | null | undefined): string {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    // Render all timestamps in US Eastern time (handles EST/EDT automatically),
+    // independent of the server's timezone.
+    timeZone: "America/New_York",
+    timeZoneName: "short",
   });
 }
 
