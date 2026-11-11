@@ -75,6 +75,31 @@ export async function trackUrlAction(_prev: TrackActionState, formData: FormData
   return { ok: true, host };
 }
 
+/**
+ * Run an immediate scan for a tracked URL, outside its weekly cadence. Uses the
+ * URL's monitoring schedule, so it inherits the same subscription gate (returns
+ * without scanning if the subscription is inactive).
+ */
+export async function scanUrlNowAction(formData: FormData): Promise<void> {
+  const { org } = await requireTenant();
+  const targetId = String(formData.get("id"));
+  const target = await prisma.target.findFirst({ where: { id: targetId, orgId: org.id } });
+  if (!target) return;
+
+  const schedule = await prisma.schedule.findFirst({
+    where: { orgId: org.id, targetIds: { has: targetId } },
+  });
+  if (!schedule) return;
+
+  const { createAuditFromSchedule } = await import("@/lib/audit-core");
+  const { enqueueScan } = await import("@/lib/queue");
+  const auditId = await createAuditFromSchedule(schedule.id);
+  if (auditId) await enqueueScan(auditId);
+
+  revalidatePath("/dashboard/monitor");
+  revalidatePath("/dashboard/alerts");
+}
+
 /** Stop tracking a URL: delete its target and the schedule(s) that watch it. */
 export async function untrackUrlAction(formData: FormData): Promise<void> {
   const { org } = await requireTenant();
