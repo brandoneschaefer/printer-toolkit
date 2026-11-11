@@ -5,7 +5,7 @@ import { CheckForm } from "@/components/CheckForm";
 import { getTenant } from "@/lib/tenant";
 
 export const metadata = {
-  title: "Printer Exposure Check — PRET",
+  title: "Printer Exposure Check — Printer Toolkit",
   description: "Check a company's internet-facing printer exposure from just a domain. Passive, non-intrusive.",
 };
 
@@ -17,7 +17,7 @@ export default async function CheckPage() {
     <div className="min-h-screen bg-gradient-to-b from-ink-900 to-ink-800">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-2 text-lg font-bold text-white">
-          <ShieldCheck className="h-6 w-6 text-brand-400" /> PRET
+          <ShieldCheck className="h-6 w-6 text-brand-400" /> Printer Toolkit
         </Link>
         <Link href="/register" className="btn-ghost text-sm">Get a full audit</Link>
       </header>

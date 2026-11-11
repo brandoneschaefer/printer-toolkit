@@ -1,8 +1,8 @@
 {
-  "name": "sentinelprint",
+  "name": "printer-toolkit",
   "version": "0.1.0",
   "private": true,
-  "description": "SentinelPrint — multi-tenant printer security auditing SaaS (non-destructive assessment, one-time audits + monthly monitoring subscriptions).",
+  "description": "Printer Toolkit — multi-tenant printer security auditing SaaS (non-destructive assessment, one-time audits + monthly monitoring subscriptions).",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

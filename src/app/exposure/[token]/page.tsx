@@ -14,7 +14,7 @@ async function load(token: string) {
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
   const report = await load(token);
-  if (!report) return { title: "Printer Exposure Report — PRET" };
+  if (!report) return { title: "Printer Exposure Report — Printer Toolkit" };
   const verdict = report.exposed ? "Exposure detected" : "No external exposure";
   return {
     title: `Printer Exposure Report — ${report.domain}`,
@@ -41,8 +41,8 @@ export default async function PublicExposurePage({ params }: { params: Promise<{
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-brand-400" />
             <div className="leading-tight">
-              <div className="text-lg font-bold text-white">PRET</div>
-              <div className="text-xs text-slate-400">Printer Exploitation Toolkit</div>
+              <div className="text-lg font-bold text-white">Printer Toolkit</div>
+              <div className="text-xs text-slate-400">Printer security assessment</div>
             </div>
           </div>
           <div className="text-right text-xs text-slate-400">{dateTime(report.createdAt)}</div>
@@ -122,7 +122,7 @@ export default async function PublicExposurePage({ params }: { params: Promise<{
           <Link href="/register" className="btn-primary mt-5 px-6 py-3 text-base">
             Get a full printer security audit
           </Link>
-          <p className="mt-3 text-xs text-slate-400">PRET · Printer Exploitation Toolkit</p>
+          <p className="mt-3 text-xs text-slate-400">Printer Toolkit</p>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">

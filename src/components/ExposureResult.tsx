@@ -82,7 +82,7 @@ export function ExposureResult({ result: r, showCta = true }: { result: ReconRes
         <div className="card border-brand-400/40 ring-1 ring-brand-400/30">
           <h3 className="font-semibold text-white">See what this misses</h3>
           <p className="mt-1 text-sm text-slate-300">
-            This external check only sees what&apos;s exposed to the internet. A full PRET audit assesses every printer
+            This external check only sees what&apos;s exposed to the internet. A full Printer Toolkit audit assesses every printer
             on the internal network for default passwords, open management, and insecure protocols.
           </p>
           <Link href="/register" className="btn-primary mt-4">Get a full audit</Link>

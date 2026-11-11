@@ -1,7 +1,7 @@
-// SentinelPrint on-prem collector agent.
+// Printer Toolkit on-prem collector agent.
 //
 // Runs INSIDE a customer network, where it can reach printers on private
-// VLANs. It polls the SentinelPrint control plane for jobs scoped to its
+// VLANs. It polls the Printer Toolkit control plane for jobs scoped to its
 // organization, runs the (read-only) scan engine locally, and posts results
 // back. Printers never need to be exposed to the internet.
 //
@@ -75,7 +75,7 @@ async function heartbeat() {
 }
 
 async function main() {
-  log(`SentinelPrint collector starting — control plane ${BASE}`);
+  log(`Printer Toolkit collector starting — control plane ${BASE}`);
   await heartbeat();
   // eslint-disable-next-line no-constant-condition
   while (true) {

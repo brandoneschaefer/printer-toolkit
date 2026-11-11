@@ -1,6 +1,6 @@
-# SentinelPrint
+# Printer Toolkit
 
-**Multi-tenant printer security auditing SaaS.** SentinelPrint assesses a
+**Multi-tenant printer security auditing SaaS.** Printer Toolkit assesses a
 corporate printer fleet for the exposures that make printers a soft entry point
 into a network — open printing protocols, default SNMP community strings,
 unauthenticated PJL access, plaintext web administration, and default
@@ -12,7 +12,7 @@ It is built for corporate customers and billed two ways:
 - **Continuous monitoring** — a monthly subscription for unlimited re-audits.
 
 > ### Scope & safety
-> SentinelPrint performs **authorized, non-destructive assessment only**. It
+> Printer Toolkit performs **authorized, non-destructive assessment only**. It
 > reads exposure; it never formats a filesystem, deletes jobs, resets a device,
 > or runs any state-changing command. Every target must be explicitly marked as
 > *authorized* by the tenant before it can be scanned. You are responsible for
