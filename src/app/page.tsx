@@ -4,6 +4,10 @@ import { PRICING } from "@/lib/env";
 import { money } from "@/lib/format";
 import { getSession } from "@/lib/auth";
 
+// Launch toggle: hide the one-time "On-demand audit" tier until ~30 days
+// post-launch. Flip to `true` to restore it — the card markup is kept below.
+const SHOW_ONE_TIME_AUDIT = false;
+
 export default async function LandingPage() {
   const session = await getSession();
 
@@ -82,26 +86,34 @@ export default async function LandingPage() {
       <section id="pricing" className="mx-auto max-w-6xl px-6 py-14">
         <h2 className="text-center text-3xl font-bold text-white">Simple, transparent pricing</h2>
         <p className="mt-2 text-center text-slate-400">
-          Run a one-off audit, or subscribe for continuous fleet monitoring.
+          {SHOW_ONE_TIME_AUDIT
+            ? "Run a one-off audit, or subscribe for continuous fleet monitoring."
+            : "Subscribe for continuous fleet monitoring."}
         </p>
-        <div className="mx-auto mt-10 grid max-w-3xl gap-6 sm:grid-cols-2">
-          <div className="card flex flex-col">
-            <h3 className="text-lg font-semibold text-white">On-demand audit</h3>
-            <p className="mt-1 text-sm text-slate-400">A single full assessment of your authorized scope.</p>
-            <div className="mt-5 text-4xl font-bold text-white">
-              {money(PRICING.oneTimeAuditCents)}
-              <span className="text-base font-normal text-slate-400"> / audit</span>
+        <div
+          className={`mx-auto mt-10 grid gap-6 ${
+            SHOW_ONE_TIME_AUDIT ? "max-w-3xl sm:grid-cols-2" : "max-w-md"
+          }`}
+        >
+          {SHOW_ONE_TIME_AUDIT && (
+            <div className="card flex flex-col">
+              <h3 className="text-lg font-semibold text-white">On-demand audit</h3>
+              <p className="mt-1 text-sm text-slate-400">A single full assessment of your authorized scope.</p>
+              <div className="mt-5 text-4xl font-bold text-white">
+                {money(PRICING.oneTimeAuditCents)}
+                <span className="text-base font-normal text-slate-400"> / audit</span>
+              </div>
+              <ul className="mt-5 space-y-2 text-sm text-slate-300">
+                <li>✓ Full protocol & credential assessment</li>
+                <li>✓ Prioritized remediation report</li>
+                <li>✓ Up to {process.env.SCANNER_MAX_HOSTS ?? 256} hosts per audit</li>
+                <li>✓ Export-ready findings</li>
+              </ul>
+              <Link href="/register" className="btn-ghost mt-6">
+                Buy an audit
+              </Link>
             </div>
-            <ul className="mt-5 space-y-2 text-sm text-slate-300">
-              <li>✓ Full protocol & credential assessment</li>
-              <li>✓ Prioritized remediation report</li>
-              <li>✓ Up to {process.env.SCANNER_MAX_HOSTS ?? 256} hosts per audit</li>
-              <li>✓ Export-ready findings</li>
-            </ul>
-            <Link href="/register" className="btn-ghost mt-6">
-              Buy an audit
-            </Link>
-          </div>
+          )}
           <div className="card flex flex-col border-brand-400/40 ring-1 ring-brand-400/30">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-white">Continuous monitoring</h3>
@@ -113,7 +125,7 @@ export default async function LandingPage() {
               <span className="text-base font-normal text-slate-400"> / month</span>
             </div>
             <ul className="mt-5 space-y-2 text-sm text-slate-300">
-              <li>✓ Everything in on-demand</li>
+              <li>{SHOW_ONE_TIME_AUDIT ? "✓ Everything in on-demand" : "✓ Full protocol & credential assessment"}</li>
               <li>✓ Unlimited audits</li>
               <li>✓ Scheduled re-scans</li>
               <li>✓ Trend tracking across audits</li>
