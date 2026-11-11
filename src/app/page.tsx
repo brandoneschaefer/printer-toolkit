@@ -39,7 +39,7 @@ export default async function LandingPage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pb-12 pt-10 text-center">
-        <span className="badge bg-brand-500/15 text-brand-300">Non-destructive printer fleet assessment</span>
+        <span className="badge bg-brand-500/15 text-brand-300">Printer fleet security monitoring &amp; alerts</span>
         <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold leading-tight text-white sm:text-5xl">
           Find the printers quietly exposing your corporate network
         </h1>
@@ -128,6 +128,7 @@ export default async function LandingPage() {
               <li>{SHOW_ONE_TIME_AUDIT ? "✓ Everything in on-demand" : "✓ Full protocol & credential assessment"}</li>
               <li>✓ Unlimited audits</li>
               <li>✓ Scheduled re-scans</li>
+              <li>✓ Email alerts on new exposures</li>
               <li>✓ Trend tracking across audits</li>
             </ul>
             <Link href="/register" className="btn-primary mt-6">

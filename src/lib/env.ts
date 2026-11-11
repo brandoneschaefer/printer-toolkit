@@ -72,11 +72,19 @@ export const env = {
 
   // Shodan API key for the public External Exposure Check (optional).
   shodanApiKey: str("SHODAN_API_KEY"),
+
+  // Email exposure alerts for active monitoring subscribers (optional).
+  // When RESEND_API_KEY is unset, alerting is a silent no-op, so the app runs
+  // fine without it; set the key (and a verified sender domain) to turn it on.
+  alerts: {
+    resendApiKey: str("RESEND_API_KEY"),
+    fromEmail: str("ALERT_FROM_EMAIL", "alerts@printertoolkit.com"),
+  },
 };
 
 // Pricing shown in the UI. (Stripe is the source of truth for real charges.)
 export const PRICING = {
   oneTimeAuditCents: 49900, // $499 per on-demand audit
-  subscriptionMonthlyCents: 29900, // $299/mo continuous monitoring
+  subscriptionMonthlyCents: 9900, // $99/mo continuous monitoring
   currency: "usd",
 };

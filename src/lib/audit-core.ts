@@ -6,6 +6,7 @@
 
 import { prisma } from "./db";
 import { env } from "./env";
+import { maybeSendExposureAlert } from "./alerts";
 import { expandScope } from "./scanner/targets";
 import { runScan, riskScore, severityCounts } from "./scanner";
 import type { HostResult } from "./scanner";
@@ -68,6 +69,10 @@ export async function persistResults(auditId: string, hosts: HostResult[]): Prom
       },
     });
   });
+
+  // Best-effort exposure alert for active monitoring subscribers. Never throws
+  // (self-contained try/catch), so it can't affect audit completion.
+  await maybeSendExposureAlert(auditId);
 }
 
 export async function markAuditFailed(auditId: string, message: string): Promise<void> {
