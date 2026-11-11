@@ -1,14 +1,14 @@
-# SentinelPrint Collector Agent
+# Printer Toolkit Collector Agent
 
 The collector is a small, read-only agent you run **inside the network you want
-to audit**. It lets SentinelPrint assess printers on private VLANs
+to audit**. It lets Printer Toolkit assess printers on private VLANs
 (`10.x` / `192.168.x`) that a cloud server could never reach — without exposing
 any printer to the internet.
 
 ## How it works
 
 ```
-  Customer network (private)                 SentinelPrint (cloud)
+  Customer network (private)                 Printer Toolkit (cloud)
   ┌───────────────────────────┐              ┌────────────────────────┐
   │  printers (9100/161/80…)   │              │  control plane + DB    │
   │        ▲                   │   HTTPS out  │  (audits, billing, UI) │
@@ -53,11 +53,11 @@ On an always-on Windows PC inside the target network, open **PowerShell as
 Administrator** and paste the command shown on the **Collectors** page:
 
 ```powershell
-$env:COLLECTOR_TOKEN="<token>"; $env:SENTINEL_URL="https://your-app.onrender.com"; irm https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/installer/install-collector.ps1 | iex
+$env:COLLECTOR_TOKEN="<token>"; $env:SENTINEL_URL="https://your-app.onrender.com"; irm https://raw.githubusercontent.com/brandoneschaefer/printer-toolkit/main/installer/install-collector.ps1 | iex
 ```
 
 This downloads a small Node runtime + the collector bundle into
-`%ProgramData%\SentinelPrintCollector`, and registers an always-on background
+`%ProgramData%\PrinterToolkitCollector`, and registers an always-on background
 task (starts at boot, restarts on failure, runs as SYSTEM). Remove it with
 `installer/uninstall-collector.ps1`.
 
@@ -67,13 +67,13 @@ task (starts at boot, restarts on failure, runs as SYSTEM). Remove it with
 
 ```bash
 # build once from the repo root
-docker build -f agent/Dockerfile -t sentinelprint-collector .
+docker build -f agent/Dockerfile -t printertoolkit-collector .
 
 # run inside the target network
 docker run -d --name sentinel-collector --network host \
   -e SENTINEL_URL=https://your-app.onrender.com \
   -e COLLECTOR_TOKEN=<id.secret> \
-  sentinelprint-collector
+  printertoolkit-collector
 ```
 
 `--network host` lets the agent reach printers directly on the LAN.

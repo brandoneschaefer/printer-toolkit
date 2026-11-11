@@ -1,8 +1,8 @@
-# PRET Collector — mini-appliance
+# Printer Toolkit Collector — mini-appliance
 
 A plug-and-play printer-audit sensor you pre-configure once and ship to a
 customer. They plug in power + ethernet; it scans their fleet and reports to
-your PRET cloud. Nothing to install on their PCs, no admin on their side.
+your Printer Toolkit cloud. Nothing to install on their PCs, no admin on their side.
 
 ## What you need
 
@@ -13,13 +13,13 @@ your PRET cloud. Nothing to install on their PCs, no admin on their side.
 ## Build an appliance (once, by you)
 
 1. Flash the OS and boot the box on a network with internet access.
-2. Register a collector in the PRET dashboard (**Collectors → Register**) and
+2. Register a collector in the Printer Toolkit dashboard (**Collectors → Register**) and
    copy the token.
 3. Provision it:
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/brandoneschaefer/PRET-Printer-Exploitation-Toolkit/main/appliance/provision.sh \
-     | sudo bash -s -- <COLLECTOR_TOKEN> https://sentinelprint.onrender.com
+   curl -fsSL https://raw.githubusercontent.com/brandoneschaefer/printer-toolkit/main/appliance/provision.sh \
+     | sudo bash -s -- <COLLECTOR_TOKEN> https://printertoolkit.com
    ```
 
    This installs Docker (if needed) and a `pret-collector` systemd service that

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PRET Collector — mini-appliance provisioning.
+# Printer Toolkit Collector — mini-appliance provisioning.
 #
 # Turns a fresh Linux box (Raspberry Pi, mini-PC, VM) into a plug-and-play
 # printer-audit sensor: installs Docker if needed, runs the collector as a
@@ -16,8 +16,8 @@
 set -euo pipefail
 
 TOKEN="${1:-}"
-URL="${2:-https://sentinelprint.onrender.com}"
-IMAGE="${PRET_COLLECTOR_IMAGE:-ghcr.io/brandoneschaefer/sentinelprint-collector:latest}"
+URL="${2:-https://printertoolkit.com}"
+IMAGE="${PRET_COLLECTOR_IMAGE:-ghcr.io/brandoneschaefer/printertoolkit-collector:latest}"
 
 if [ -z "$TOKEN" ]; then
   echo "Usage: sudo bash provision.sh <COLLECTOR_TOKEN> [SENTINEL_URL]" >&2
@@ -44,7 +44,7 @@ EOF
 echo "==> Installing systemd service..."
 cat > /etc/systemd/system/pret-collector.service <<'EOF'
 [Unit]
-Description=PRET Collector (printer security sensor)
+Description=Printer Toolkit Collector (printer security sensor)
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
@@ -68,6 +68,6 @@ systemctl daemon-reload
 systemctl enable --now pret-collector.service
 
 echo ""
-echo "PRET collector installed. It will auto-start on boot and reconnect automatically."
+echo "Printer Toolkit collector installed. It will auto-start on boot and reconnect automatically."
 echo "Status:  systemctl status pret-collector"
 echo "Logs:    journalctl -u pret-collector -f"

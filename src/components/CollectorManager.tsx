@@ -37,14 +37,14 @@ export function CollectorManager({
   const downloadBat = (token: string) => {
     const bat = [
       "@echo off",
-      "REM PRET Collector installer - double-click to install.",
+      "REM Printer Toolkit Collector installer - double-click to install.",
       "net session >nul 2>&1",
       "if %errorlevel% neq 0 (",
       '  echo Requesting administrator permission...',
       "  powershell -Command \"Start-Process -FilePath '%~f0' -Verb RunAs\"",
       "  exit /b",
       ")",
-      "echo Installing PRET Collector...",
+      "echo Installing Printer Toolkit Collector...",
       `powershell -ExecutionPolicy Bypass -NoProfile -Command "$env:COLLECTOR_TOKEN='${token}'; $env:SENTINEL_URL='${appUrl}'; irm ${installerUrl} | iex"`,
       "echo.",
       "echo Done. You can close this window.",
@@ -67,7 +67,7 @@ export function CollectorManager({
       <form action={formAction} className="card space-y-4">
         <h2 className="font-semibold text-white">Register a collector</h2>
         <p className="text-sm text-slate-400">
-          Install a collector inside the network you want to audit. It pulls jobs from PRET and runs the
+          Install a collector inside the network you want to audit. It pulls jobs from Printer Toolkit and runs the
           scan locally, so printers on private VLANs never need to be exposed to the internet.
         </p>
         <div className="flex gap-3">

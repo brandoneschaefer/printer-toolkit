@@ -122,7 +122,7 @@ async function certSubdomains(domain: string): Promise<string[]> {
   try {
     const res = await withTimeout(
       fetch(`https://crt.sh/?q=${encodeURIComponent("%." + domain)}&output=json`, {
-        headers: { "User-Agent": "PRET-ExposureCheck/1.0" },
+        headers: { "User-Agent": "PrinterToolkit-ExposureCheck/1.0" },
       }),
       8000,
       null as any
@@ -182,7 +182,7 @@ interface InternetDbHost {
 async function internetdbHost(ip: string): Promise<InternetDbHost | null> {
   try {
     const res = await withTimeout(
-      fetch(`https://internetdb.shodan.io/${ip}`, { headers: { "User-Agent": "PRET-ExposureCheck/1.0" } }),
+      fetch(`https://internetdb.shodan.io/${ip}`, { headers: { "User-Agent": "PrinterToolkit-ExposureCheck/1.0" } }),
       6000,
       null as any
     );

@@ -9,10 +9,10 @@ export default async function GuidePage({
   const sp = await searchParams;
   const { session } = await requireTenant();
 
-  const provider = "PRET";
+  const provider = "Printer Toolkit";
   const client = sp.client?.trim() || "your organization";
   const contact = sp.contact?.trim() || session.email;
-  const device = sp.device?.trim() || "PRET Monitoring Sensor";
+  const device = sp.device?.trim() || "Printer Toolkit Monitoring Sensor";
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 text-slate-900">
@@ -27,7 +27,7 @@ export default async function GuidePage({
           <div>
             <div className="flex items-center gap-2 text-2xl font-bold text-slate-900">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-brand-600 text-white">🛡</span>
-              PRET
+              Printer Toolkit
             </div>
             <div className="mt-1 text-sm font-medium text-slate-500">Printer Security Monitoring — Setup Guide</div>
           </div>
@@ -49,7 +49,7 @@ export default async function GuidePage({
         <h2 className="mt-7 text-lg font-bold text-slate-900">Getting started</h2>
         <ol className="mt-3 space-y-3">
           {[
-            ["Place the sensor", "Set the PRET sensor near your main network switch or router."],
+            ["Place the sensor", "Set the Printer Toolkit sensor near your main network switch or router."],
             ["Connect power", "Plug in the included power adapter. A light will indicate it has powered on."],
             ["Connect the network", "Plug the ethernet cable from the sensor into any open port on your switch or router."],
             ["You're done", "The sensor activates automatically within a few minutes and begins its first assessment. There is nothing to install on your computers."],
@@ -94,7 +94,7 @@ export default async function GuidePage({
         </div>
 
         <div className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
-          Confidential — prepared for {client} by {provider}. Powered by PRET (Printer Exploitation Toolkit).
+          Confidential — prepared for {client} by {provider}. Powered by Printer Toolkit.
           Monitoring is authorized, non-destructive, and limited to the networks you have authorized.
         </div>
       </div>

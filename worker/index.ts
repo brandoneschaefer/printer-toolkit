@@ -1,4 +1,4 @@
-// SentinelPrint background worker.
+// Printer Toolkit background worker.
 //
 //   npm run worker
 //

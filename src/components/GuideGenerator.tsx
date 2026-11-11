@@ -6,7 +6,7 @@ import { FileText } from "lucide-react";
 export function GuideGenerator({ defaultContact }: { defaultContact: string }) {
   const [client, setClient] = useState("");
   const [contact, setContact] = useState(defaultContact);
-  const [device, setDevice] = useState("PRET Monitoring Sensor");
+  const [device, setDevice] = useState("Printer Toolkit Monitoring Sensor");
 
   const open = () => {
     const q = new URLSearchParams();
