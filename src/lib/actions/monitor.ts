@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireTenant } from "@/lib/tenant";
 import { expandScope } from "@/lib/scanner/targets";
 import { computeNextRun } from "@/lib/audit-core";
+import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 
 export interface TrackActionState {
@@ -46,7 +47,7 @@ export async function trackUrlAction(_prev: TrackActionState, formData: FormData
   const existing = await prisma.target.findFirst({ where: { orgId: org.id, value: host } });
   if (existing) return { error: `You're already tracking ${host}.` };
 
-  await prisma.$transaction(async (tx) => {
+  const { scheduleId } = await prisma.$transaction(async (tx) => {
     const target = await tx.target.create({
       data: {
         orgId: org.id,
@@ -56,7 +57,7 @@ export async function trackUrlAction(_prev: TrackActionState, formData: FormData
         authorized: true, // the attestation checkbox is the authorization
       },
     });
-    await tx.schedule.create({
+    const schedule = await tx.schedule.create({
       data: {
         orgId: org.id,
         createdById: session.userId,
@@ -69,9 +70,45 @@ export async function trackUrlAction(_prev: TrackActionState, formData: FormData
         nextRunAt: computeNextRun("WEEKLY"),
       },
     });
+    return { scheduleId: schedule.id };
   });
 
+  const subActive =
+    org.subscriptionStatus === "ACTIVE" &&
+    (!org.currentPeriodEnd || new Date(org.currentPeriodEnd).getTime() > Date.now());
+
+  // Kick off an immediate first scan for active subscribers (don't wait a week).
+  if (subActive) {
+    try {
+      const { createAuditFromSchedule } = await import("@/lib/audit-core");
+      const { enqueueScan } = await import("@/lib/queue");
+      const auditId = await createAuditFromSchedule(scheduleId);
+      if (auditId) await enqueueScan(auditId);
+    } catch (err) {
+      console.error("[monitor] immediate scan failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  // Confirmation email to the org (best-effort; no-op if email is unconfigured).
+  try {
+    const members = await prisma.membership.findMany({
+      where: { orgId: org.id },
+      include: { user: { select: { email: true } } },
+    });
+    const to = Array.from(new Set(members.map((m) => m.user.email).filter(Boolean)));
+    if (to.length > 0) {
+      await sendEmail({
+        to,
+        subject: `You're now monitoring ${host} — Printer Toolkit`,
+        html: confirmationHtml(host, subActive),
+      });
+    }
+  } catch (err) {
+    console.error("[monitor] confirmation email failed:", err instanceof Error ? err.message : err);
+  }
+
   revalidatePath("/dashboard/monitor");
+  revalidatePath("/dashboard/alerts");
   return { ok: true, host };
 }
 
@@ -123,4 +160,32 @@ export async function untrackUrlAction(formData: FormData): Promise<void> {
   });
 
   revalidatePath("/dashboard/monitor");
+}
+
+/** Branded confirmation email shown right after a URL is added. */
+function confirmationHtml(host: string, subActive: boolean): string {
+  const statusLine = subActive
+    ? `Your first scan is running now — results will appear under <strong>Alerts</strong> within a few minutes.`
+    : `Start your subscription to activate weekly monitoring for this URL.`;
+  const cta = `${env.appUrl}/dashboard/monitor`;
+  return `
+    <div style="font-family:system-ui,Segoe UI,Arial,sans-serif;color:#0f172a;max-width:600px;">
+      <h2 style="margin:0 0 6px;">You're all set ✅</h2>
+      <p style="color:#475569;margin:0 0 16px;">
+        <strong>${escapeHtml(host)}</strong> is now being monitored by Printer Toolkit. We check it every week
+        for printer-security exposures — open print ports, default SNMP, unauthenticated admin, and default
+        credentials — and email you the moment a new one appears.
+      </p>
+      <p style="margin:0 0 20px;">${statusLine}</p>
+      <p style="margin:0 0 24px;">
+        <a href="${cta}" style="background:#2563eb;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;">
+          View your dashboard
+        </a>
+      </p>
+      <p style="color:#94a3b8;font-size:12px;">Printer Toolkit · continuous printer fleet security monitoring.</p>
+    </div>`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
